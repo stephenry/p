@@ -29,6 +29,8 @@ RUN apt-get update \
       uuid-dev \
       zlib1g-dev \
       emacs \
+      libreadline6 \
+      libreadline6-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 

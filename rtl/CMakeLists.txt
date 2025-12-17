@@ -40,4 +40,5 @@ macro (render_rtl target_name project_yaml out_dir)
 
 endmacro ()
 
+add_subdirectory(common)
 add_subdirectory(conv)

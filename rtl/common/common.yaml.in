@@ -25,15 +25,6 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== ##
 
-top: @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
-
 sources:
-    # Project files
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lb_asic.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lb_fpga.sv
-
-include:
-    # Pull in common useful definitions
-    - @CMAKE_BINARY_DIR@/tb/sv/common.yaml
-    - @CMAKE_BINARY_DIR@/rtl/common/common.yaml
+    - @CMAKE_CURRENT_SOURCE_DIR@/enc.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/mux.sv

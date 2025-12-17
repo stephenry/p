@@ -1,4 +1,4 @@
-##========================================================================== ##
+##========================================================================== //
 ## Copyright (c) 2025, Stephen Henry
 ## All rights reserved.
 ##
@@ -23,17 +23,10 @@
 ## CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
-##========================================================================== ##
+##========================================================================== //
 
-top: @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
-
-sources:
-    # Project files
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lb_asic.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lb_fpga.sv
-
-include:
-    # Pull in common useful definitions
-    - @CMAKE_BINARY_DIR@/tb/sv/common.yaml
-    - @CMAKE_BINARY_DIR@/rtl/common/common.yaml
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/common.yaml.in
+    ${CMAKE_CURRENT_BINARY_DIR}/common.yaml
+    @ONLY
+)

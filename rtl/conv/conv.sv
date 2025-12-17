@@ -84,4 +84,15 @@ module conv #(
 , input wire logic                           rst_n
 );
 
+conv_lb_asic u_conv_lb_asic ();
+
+conv_lb_fpga u_conv_lb_fpga ();
+
+enc #(
+  .W(2)
+) u_conv_enc (
+  .i_x('b0)
+, .o_y()
+);
+
 endmodule : conv

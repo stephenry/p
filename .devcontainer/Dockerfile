@@ -28,9 +28,22 @@ RUN apt-get update \
       swig \
       uuid-dev \
       zlib1g-dev \
+      emacs \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# Build ABC
+WORKDIR /tools
+RUN git clone https://github.com/berkeley-abc/abc.git \
+ && cd abc \
+ && make -j8
+
+ENV ABC_ROOT=/tools/abc
+
+# Build VerilogPerl
+cpan install Verilog::Language
+
+# Build Verilator
 ARG VERILATOR_VER="5.034"
 WORKDIR /tools
 RUN wget https://github.com/verilator/verilator/archive/refs/tags/v${VERILATOR_VER}.tar.gz \

@@ -35,12 +35,12 @@ module mux #(
 ) (
 // -------------------------------------------------------------------------- //
 //
-  input wire logic [N - 1:0][W - 1:0]             i_x
-, input wire logic [N - 1:0]                      i_sel
+  input wire logic [N - 1:0][W - 1:0]             x_i
+, input wire logic [N - 1:0]                      sel_i
 
 // -------------------------------------------------------------------------- //
 //
-, output wire logic [W - 1:0]                     o_y
+, output wire logic [W - 1:0]                     y_o
 );
 
 // ========================================================================== //
@@ -64,7 +64,7 @@ for (genvar i = 0; i < W; i++) begin : mux_bit_i_GEN
 
   for (genvar j = 0; j < N; j++) begin : mux_bit_j_GEN
 
-assign mux_bit[i][j] = (i_sel[j] & i_x[j][i]);
+assign mux_bit[i][j] = (sel_i[j] & x_i[j][i]);
 
   end : mux_bit_j_GEN
 
@@ -82,6 +82,6 @@ end : y_GEN
 //                                                                            //
 // ========================================================================== //
 
-assign o_y = y;
+assign y_o = y;
 
 endmodule : mux

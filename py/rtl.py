@@ -32,21 +32,16 @@ import typing
 
 
 class Verilator:
-    def __init__(self, project: dict, filelist: list[str], out_dir: str):
+    def __init__(self, project: dict, filelist: list[str], vout_dir: str):
         self._project = project
         self._filelist = filelist
-        self._out_dir = out_dir
-
-        self._vout_dir = os.path.join(self._out_dir, 'verilated')
-        if os.path.exists(self._vout_dir):
-            import shutil
-            shutil.rmtree(self._vout_dir)
+        self._vout_dir = vout_dir
 
     def execute(self, force=False) -> None:
-        vc_f = os.path.join(self._out_dir, 'vc.f')
-        vc_f_timestamp = os.path.join(self._out_dir, 'vc.f.timestamp')
+        vc_f = os.path.join(self._vout_dir, 'vc.f')
+        vc_f_timestamp = os.path.join(self._vout_dir, 'vc.f.timestamp')
 
-        do_compile = True
+        do_compile = force
         if not os.path.exists(vc_f) or not os.path.exists(vc_f_timestamp):
             do_compile = True
         elif os.path.getmtime(vc_f) > os.path.getmtime(vc_f_timestamp):
@@ -55,6 +50,12 @@ class Verilator:
         if not do_compile:
             print("No VC_F changes detected; skipping Verilation.")
             return 
+
+        # Destroy all pre-verilated
+        if os.path.exists(self._vout_dir):
+            import shutil
+            shutil.rmtree(self._vout_dir)
+            os.makedirs(self._vout_dir)
 
         with open(vc_f, 'w') as f:
             self._render_command_file(f)
@@ -110,13 +111,16 @@ class Verilator:
 
 
 class RTLRenderer:
-    def __init__(self, project_file: str, out_dir: str):
+    def __init__(self, project_file: str, rtl_dir: str, vout_dir: str):
         self._project = self._load_project(project_file)
-        self._fls = list()
 
-        self._out_dir = out_dir
-        if not os.path.exists(self._out_dir):
-            os.makedirs(self._out_dir)
+        self._rtl_dir = rtl_dir
+        if not os.path.exists(self._rtl_dir):
+            os.makedirs(self._rtl_dir)
+
+        self._vout_dir = vout_dir
+        if not os.path.exists(self._vout_dir):
+            os.makedirs(self._vout_dir)
 
     def _load_project(self, project_file: str) -> None:
         if not os.path.exists(project_file):
@@ -158,13 +162,9 @@ class RTLRenderer:
     def render_rtl(self) -> typing.Tuple[bool, list[str]]:
         files = list()
 
-        rtl_dir = os.path.join(self._out_dir, 'rtl')
-        if not os.path.exists(rtl_dir):
-            os.makedirs(rtl_dir)
-
         modified = False
         for fin in self._project['sources']:
-            fout = os.path.join(rtl_dir, os.path.basename(fin))
+            fout = os.path.join(self._rtl_dir, os.path.basename(fin))
 
             if not os.path.exists(fout) or \
                (os.path.getmtime(fin) > os.path.getmtime(fout)):
@@ -173,7 +173,7 @@ class RTLRenderer:
 
             files.append(fout)
 
-        filelist = os.path.join(rtl_dir, 'filelist')
+        filelist = os.path.join(self._rtl_dir, 'filelist')
         print(f'Rendering RTL filelist to {filelist}')
         with open(filelist, 'w') as f:
             for file in files:
@@ -186,7 +186,7 @@ class RTLRenderer:
 
     def compile_rtl(self) -> None:
         modified, filelist = self.render_rtl()
-        v = Verilator(project=self._project, filelist=filelist, out_dir=self._out_dir)
+        v = Verilator(project=self._project, filelist=filelist, vout_dir=self._vout_dir)
         v.execute(force=modified)    
 
     def _render_file(self, fin: str, fout: str) -> None:

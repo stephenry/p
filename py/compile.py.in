@@ -44,10 +44,17 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--out-dir",
+    "--rtl-dir",
     type=str,
     required=True,
     help="Output directory for generated RTL files.",
+)
+
+parser.add_argument(
+    "--vout-dir",
+    type=str,
+    required=True,
+    help="Output directory for Verilation.",
 )
 
 parser.add_argument(
@@ -69,7 +76,8 @@ try:
 
     rtl_renderer = RTLRenderer(
         project_file=args.project,
-        out_dir=args.out_dir)
+        rtl_dir=args.rtl_dir,
+        vout_dir=args.vout_dir)
 
     if args.render_rtl:
         rtl_renderer.render_rtl()

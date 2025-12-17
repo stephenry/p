@@ -25,18 +25,73 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-macro (render_rtl target_name project_yaml out_dir)
-    
-    add_custom_target(${target_name}
-        COMMAND ${P_PYTHON3}
-            ${CMAKE_BINARY_DIR}/py/compile.py
-                --project ${project_yaml}
-                --out-dir ${out_dir}
-                --compile_rtl
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS ${CMAKE_SOURCE_DIR}/py/rtl.py
-        COMMENT "Rendering RTL for target: ${target_name}"
+macro (generate_project)
+
+    set(options )
+    set(one_value_args NAME)
+    set(multi_value_args YAML_IN CC_SRCS)
+
+    # Parse arguments
+    cmake_parse_arguments(arg 
+        "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+    # Declare library target
+    add_library(${arg_NAME} STATIC ${arg_CC_SRCS})
+    set_target_properties(${arg_NAME} PROPERTIES
+      CXX_STANDARD 20
+      CXX_STANDARD_REQUIRED YES
+      CXX_EXTENSIONS NO
     )
+    # Append to global project list
+    list(APPEND P_PROJECT_LIBS ${arg_NAME})
+
+    set (v_libraries "")
+    foreach (YAML_IN ${arg_YAML_IN})
+
+        # 'instance' name is a single invocation of verilator
+        get_filename_component(v_instance ${YAML_IN} NAME_WE)
+
+        set(project_fn ${CMAKE_CURRENT_BINARY_DIR}/${v_instance}.yaml)
+
+        configure_file(${YAML_IN} ${project_fn})
+
+        # RTL rendering will generate these directories, but CMAKE requires that they be
+        # present at configuration-time.
+        set(rtl_dir ${CMAKE_CURRENT_BINARY_DIR}/${v_instance}/rtl)
+        file(MAKE_DIRECTORY ${rtl_dir})
+
+        set(vout_dir ${CMAKE_CURRENT_BINARY_DIR}/${v_instance}/v)
+        file(MAKE_DIRECTORY ${vout_dir})
+
+        # RTL rendering target
+        add_custom_target(render_${v_instance}
+            COMMAND ${P_PYTHON3}
+                ${CMAKE_BINARY_DIR}/py/compile.py
+                    --project ${project_fn}
+                    --rtl-dir ${rtl_dir}
+                    --vout-dir ${vout_dir}
+                    --compile_rtl
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            DEPENDS ${CMAKE_SOURCE_DIR}/py/rtl.py
+            COMMENT "Rendering RTL for target: ${v_instance}")
+
+        # Construct imported library corresponding to the verilated output.
+        add_library(v${v_instance} IMPORTED STATIC GLOBAL)
+        set_target_properties(v${v_instance} PROPERTIES
+            IMPORTED_LOCATION
+            ${vout_dir}/V${v_instance}__ALL.a
+            INTERFACE_INCLUDE_DIRECTORIES
+            ${vout_dir}
+            INTERFACE_LINK_LIBRARIES
+            vlib)
+
+        # Link verilated library to testbench
+        add_dependencies(v${v_instance} render_${v_instance})
+        list(APPEND v_libraries v${v_instance})
+
+    endforeach ()
+
+    target_link_libraries(${arg_NAME} tb vlib ${v_libraries})
 
 endmacro ()
 

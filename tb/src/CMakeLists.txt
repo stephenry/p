@@ -38,6 +38,6 @@ set_target_properties(tb PROPERTIES
 
 # Public interface
 target_include_directories(tb
- PUBLIC
- ${CMAKE_SOURCE_DIR}/tb/include
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/tb/include
 )

@@ -56,7 +56,7 @@
       .d(__name``_w), .q(__name``_r), .arst_n(__rst), .clk(__clk))
 
 `define P_DFFR(__type, __name, __init, __clk, __arst_n) \
-    `H_DFFR_RST(__type, __name, __init, __clk, __arst_n)
+    `P_DFFR_RST(__type, __name, __init, __clk, __arst_n)
 
 `define P_DFFRE(__type, __name, __en, __init, __clk, __arst_n) \
     __type __name``_r; \

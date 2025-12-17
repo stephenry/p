@@ -31,10 +31,6 @@ sources:
     # Project files
     - @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
 
-    # Common behavioural models
-    - @CMAKE_SOURCE_DIR@/tb/sv/generic_bram.sv
-    - @CMAKE_SOURCE_DIR@/tb/sv/generic_sram.sv
-
-includes:
-    # TB includes
-    - @CMAKE_SOURCE_DIR@/tb/sv
+include:
+    # Pull in common useful definitions
+    - @CMAKE_BINARY_DIR@/tb/sv/common.yaml

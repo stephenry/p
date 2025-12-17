@@ -72,6 +72,16 @@ module conv #(
                                              m_tdata_o
 , output wire logic                          m_tuser_o
 , output wire logic                          m_tlast_o
+
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Misc.                                                                      //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+, input wire logic                           clk_i
+, input wire logic                           rst_n
 );
 
 endmodule : conv

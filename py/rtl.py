@@ -79,11 +79,19 @@ class Verilator:
         if True:
             cmds.append(f"--trace")
 
-        for fl in self._filelist:
-            cmds.append(f"{fl}")
+        with open(self._filelist, 'r') as flist:
+            for file in flist:
+                file_nl = file.rstrip('\n')
+                cmds.append(f"{file_nl}")
 
-        for incf in self._project['includes']:
-            cmds.append(f"-I{incf}")
+        rtl_path = os.path.dirname(self._filelist)
+
+        includes = [f'{rtl_path}']
+        if 'directories' in self._project:
+            includes.extend(self._project['directories'])
+
+        for include in includes:
+            cmds.append(f"-I{include}")
 
         f.write('\n'.join(cmds))
         f.write('\n')
@@ -118,14 +126,37 @@ class RTLRenderer:
         with open(project_file, 'r') as f:
             project = yaml.safe_load(f)
 
+        # Fix-up includes
+        if 'include' in project:
+            for include in project['include']:
+                self._load_project_include(project, include)
+
         if 'sources' not in project:
             # Project has no sources defined!
             raise ValueError("Project file missing 'sources' section.")
 
         return project
 
+    def _load_project_include(self, project: dict, include: str) -> None:
+        if not os.path.exists(include):
+            raise FileNotFoundError(f"Included project file not found: {include}")
+
+        import yaml
+        with open(include, 'r') as f:
+            inc_project = yaml.safe_load(f)
+
+        if 'sources' in inc_project:
+            if 'sources' not in project:
+                project['sources'] = list()
+            project['sources'].extend(inc_project['sources'])
+
+        if 'directories' in inc_project:
+            if 'directories' not in project:
+                project['directories'] = list()
+            project['directories'].extend(inc_project['directories'])
+
     def render_rtl(self) -> typing.Tuple[bool, list[str]]:
-        fls = list()
+        files = list()
 
         rtl_dir = os.path.join(self._out_dir, 'rtl')
         if not os.path.exists(rtl_dir):
@@ -140,22 +171,26 @@ class RTLRenderer:
                 self._render_file(fin, fout)
                 modified = True
 
-            fls.append(fout)
+            files.append(fout)
 
+        filelist = os.path.join(rtl_dir, 'filelist')
+        print(f'Rendering RTL filelist to {filelist}')
+        with open(filelist, 'w') as f:
+            for file in files:
+                f.write(f"{file}\n")  
+ 
         if not modified:
             print("No RTL changes detected; skipping rendering.")
-            return (False, fls)
-
-        print(f'Rendering RTL to {rtl_dir}...')
-        return (True, fls)
+       
+        return (modified, filelist)
 
     def compile_rtl(self) -> None:
-        modified, fls = self.render_rtl()
-        v = Verilator(project=self._project, filelist=fls, out_dir=self._out_dir)
+        modified, filelist = self.render_rtl()
+        v = Verilator(project=self._project, filelist=filelist, out_dir=self._out_dir)
         v.execute(force=modified)    
 
     def _render_file(self, fin: str, fout: str) -> None:
-        print(f"Rendering RTL: {fin} -> {fout}")
+        print(f"Rendering RTL: {fin} to {fout}")
         with (open(fout, 'w') as o, open(fin, 'r') as i):
             o.write(i.read())
 

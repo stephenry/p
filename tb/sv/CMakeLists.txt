@@ -25,47 +25,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-
-# Testbench sources
-set(CONVTB_SRCS 
-  tb.cc
-)
-
-# Testbench library
-add_library(convtb STATIC ${CONVTB_SRCS})
-set_target_properties(convtb PROPERTIES
-  CXX_STANDARD 20
-  CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO
-)
-
-# Attach current TB to global worklist.
-list(APPEND P_PROJECT_LIBS convtb)
-
-# RTL rendering
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/conv.yaml.in
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
+    ${CMAKE_CURRENT_SOURCE_DIR}/common.yaml.in
+    ${CMAKE_CURRENT_BINARY_DIR}/common.yaml
+    @ONLY
 )
-
-render_rtl(render_conv_rtl
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
-    ${CMAKE_CURRENT_BINARY_DIR}/conv
-)
-target_include_directories(convtb PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/conv
-)
-
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/conv/verilated)
-
-add_library(vconv IMPORTED STATIC GLOBAL)
-set_target_properties(vconv PROPERTIES
-    IMPORTED_LOCATION
-    ${CMAKE_CURRENT_BINARY_DIR}/conv/verilated/Vconv__ALL.a
-    INTERFACE_INCLUDE_DIRECTORIES
-    ${CMAKE_CURRENT_BINARY_DIR}/conv/verilated
-    INTERFACE_LINK_LIBRARIES
-    vlib
-)
-add_dependencies(vconv render_conv_rtl)
-target_link_libraries(convtb tb vlib vconv)

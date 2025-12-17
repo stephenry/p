@@ -41,7 +41,7 @@ RUN git clone https://github.com/berkeley-abc/abc.git \
 ENV ABC_ROOT=/tools/abc
 
 # Build VerilogPerl
-cpan install Verilog::Language
+RUN cpan install Verilog::Language
 
 # Build Verilator
 ARG VERILATOR_VER="5.034"

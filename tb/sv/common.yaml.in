@@ -26,12 +26,12 @@
 ##========================================================================== ##
 
 sources:
-    - @CMAKE_SOURCE_DIR@/tb/sv/dff.sv
-    - @CMAKE_SOURCE_DIR@/tb/sv/dffe.sv
-    - @CMAKE_SOURCE_DIR@/tb/sv/dffr.sv
-    - @CMAKE_SOURCE_DIR@/tb/sv/dffre.sv
-    - @CMAKE_SOURCE_DIR@/tb/sv/generic_bram.sv
-    - @CMAKE_SOURCE_DIR@/tb/sv/generic_sram.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/dff.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/dffe.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/dffr.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/dffre.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/generic_bram.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/generic_sram.sv
 
 directories:
-    - @CMAKE_SOURCE_DIR@/tb/sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/

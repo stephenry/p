@@ -23,49 +23,21 @@
 ## CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
-##========================================================================== //
+#w#========================================================================== //
 
-
-# Testbench sources
-set(CONVTB_SRCS 
-  tb.cc
+set(TB_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/test.cc
 )
 
-# Testbench library
-add_library(convtb STATIC ${CONVTB_SRCS})
-set_target_properties(convtb PROPERTIES
+add_library(tb STATIC ${TB_SRCS})
+set_target_properties(tb PROPERTIES
   CXX_STANDARD 20
   CXX_STANDARD_REQUIRED YES
   CXX_EXTENSIONS NO
 )
 
-# Attach current TB to global worklist.
-list(APPEND P_PROJECT_LIBS convtb)
-
-# RTL rendering
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/conv.yaml.in
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
+# Public interface
+target_include_directories(tb
+ PUBLIC
+ ${CMAKE_SOURCE_DIR}/tb/include
 )
-
-render_rtl(render_conv_rtl
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv
-)
-target_include_directories(convtb PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv
-)
-
-add_library(vconv IMPORTED STATIC GLOBAL)
-set_target_properties(vconv PROPERTIES
-    IMPORTED_LOCATION
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv/verilated/Vconv__ALL.a
-    INTERFACE_INCLUDE_DIRECTORIES
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv/verilated
-    INTERFACE_LINK_LIBRARIES
-    vlib
-)
-add_dependencies(vconv render_conv_rtl)
-target_link_libraries(convtb tb vconv vlib)
-
-add_dependencies(convtb render_conv_rtl)

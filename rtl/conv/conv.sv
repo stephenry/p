@@ -43,7 +43,7 @@ module conv #(
 , parameter string TARGET = "FPGA"
 
   // Total number of pixels emitted by the kernel
-, localparam int KERNAL_SIZE_N = (KERNEL_DIAMETER_N * 2)
+, localparam int KERNEL_SIZE_N = (KERNEL_DIAMETER_N * 2)
 ) (
 
 // -------------------------------------------------------------------------- //
@@ -52,12 +52,12 @@ module conv #(
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic                           tvalid_i
-, input wire logic [PIXEL_W - 1:0]           tdata_i
-, input wire logic                           tlast_i
-, input wire logic                           tuser_i
+  input wire logic                           s_tvalid_i
+, input wire logic [PIXEL_W - 1:0]           s_tdata_i
+, input wire logic                           s_tlast_i
+, input wire logic                           s_tuser_i
 
-, output wire logic                          tready_i
+, output wire logic                          s_tready_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -65,13 +65,13 @@ module conv #(
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, input wire logic                           tready_i
+, input wire logic                           m_tready_i
 //
-, output wire logic                          tvalid_o
+, output wire logic                          m_tvalid_o
 , output wire logic [KERNEL_SIZE_N - 1:0][PIXEL_W - 1:0] 
-                                             tdata_o
-, output wire logic                          tuser_o
-, output wire logic                          tlast_o
+                                             m_tdata_o
+, output wire logic                          m_tuser_o
+, output wire logic                          m_tlast_o
 );
 
 endmodule : conv

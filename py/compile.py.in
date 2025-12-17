@@ -25,47 +25,61 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+import sys
+import argparse
 
-# Testbench sources
-set(CONVTB_SRCS 
-  tb.cc
+sys.path.extend([
+    '@CMAKE_CURRENT_SOURCE_DIR@',
+    '@CMAKE_CURRENT_BINARY_DIR@',
+])
+
+parser = argparse.ArgumentParser(
+    description="Render RTL and invoke Verilation."
+)
+parser.add_argument(
+    "--project",
+    type=str,
+    required=True,
+    help="Path to the project control file",
 )
 
-# Testbench library
-add_library(convtb STATIC ${CONVTB_SRCS})
-set_target_properties(convtb PROPERTIES
-  CXX_STANDARD 20
-  CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO
+parser.add_argument(
+    "--out-dir",
+    type=str,
+    required=True,
+    help="Output directory for generated RTL files.",
 )
 
-# Attach current TB to global worklist.
-list(APPEND P_PROJECT_LIBS convtb)
-
-# RTL rendering
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/conv.yaml.in
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
+parser.add_argument(
+    "--render_rtl",
+    action="store_true",
+    help="Render RTL files from templates.",
 )
 
-render_rtl(render_conv_rtl
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv
-)
-target_include_directories(convtb PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv
+parser.add_argument(
+    "--compile_rtl",
+    action="store_true",
+    help="Render and compile RTL files",
 )
 
-add_library(vconv IMPORTED STATIC GLOBAL)
-set_target_properties(vconv PROPERTIES
-    IMPORTED_LOCATION
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv/verilated/Vconv__ALL.a
-    INTERFACE_INCLUDE_DIRECTORIES
-    ${CMAKE_CURRENT_BINARY_DIR}/vconv/verilated
-    INTERFACE_LINK_LIBRARIES
-    vlib
-)
-add_dependencies(vconv render_conv_rtl)
-target_link_libraries(convtb tb vconv vlib)
+args = parser.parse_args()
 
-add_dependencies(convtb render_conv_rtl)
+try:
+    from rtl import RTLRenderer
+
+    rtl_renderer = RTLRenderer(
+        project_file=args.project,
+        out_dir=args.out_dir)
+
+    if args.render_rtl:
+        rtl_renderer.render_rtl()
+    elif args.compile_rtl:
+        rtl_renderer.compile_rtl()
+    else:
+        pass
+
+except Exception as e:
+    print(f"Error: {e}")
+    sys.exit(1)
+
+sys.exit(0)

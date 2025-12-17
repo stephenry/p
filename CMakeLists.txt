@@ -28,16 +28,21 @@
 cmake_minimum_required(VERSION 3.22)
 project(p)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
- 
-find_package(VerilatorPkg)
-
+include(${CMAKE_SOURCE_DIR}/cmake/FindVerilatorPkg.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/SetupVenv.cmake)
 
 option(OPT_VCD_ENABLE "Enable Verilated module tracing" FALSE)
 
 enable_testing()
 
+add_subdirectory(py)
+
+# Testbench (and associated verification collatoral) library
+add_subdirectory(tb)
+
+# Problems
 set(P_PROJECT_LIBS "")
 add_subdirectory(rtl)
-add_subdirectory(tb)
+
+# Test driver
+add_subdirectory(test)

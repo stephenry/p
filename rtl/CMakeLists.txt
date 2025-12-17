@@ -29,11 +29,12 @@ macro (render_rtl target_name project_yaml out_dir)
     
     add_custom_target(${target_name}
         COMMAND ${P_PYTHON3}
-            ${CMAKE_SOURCE_DIR}/py/render_rtl.py
+            ${CMAKE_BINARY_DIR}/py/compile.py
                 --project ${project_yaml}
                 --out-dir ${out_dir}
                 --compile_rtl
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS ${CMAKE_SOURCE_DIR}/py/rtl.py
         COMMENT "Rendering RTL for target: ${target_name}"
     )
 

@@ -25,10 +25,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef RTL_COMMON_DEFS_VH
-`define RTL_COMMON_DEFS_VH
+`ifndef TB_RTL_COMMON_DEFS_SVH
+`define TB_RTL_COMMON_DEFS_SVH
 
+// Some generic timescale.
 `timescale 1ns/1ps
+
+// Inhibit implicit net declaration.
 `default_nettype none
 
-`endif
+`endif // TB_RTL_COMMON_DEFS_SVH

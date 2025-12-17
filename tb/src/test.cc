@@ -25,10 +25,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#include "tb/tb.h"
-
-#include "verilated/Vconv.h"
-
-int foo() {
-  return 42;
+int bar() {
+  return 7;
 }

@@ -25,6 +25,44 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-int main(int argc, char** argv) {
-  return 0;
-}
+#ifndef TB_TB_H
+#define TB_TB_H 
+
+#include <limits>
+#include <random>
+
+inline class Random {
+ public:
+  using seed_type = std::mt19937::result_type;
+
+  explicit Random(seed_type s = seed_type{}) { seed(s); }
+
+  // Set seed of randomization engine.
+  void seed(seed_type s) { mt_.seed(s); }
+
+  // Generate a random integral type in range [lo, hi]
+  template <typename T>
+  T uniform(T hi = std::numeric_limits<T>::max(),
+            T lo = std::numeric_limits<T>::min()) {
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
+    if constexpr (std::is_integral_v<T>) {
+      // Integral type
+      std::uniform_int_distribution<T> d(lo, hi);
+      return d(mt_);
+    } else {
+      // Floating-point type
+      std::uniform_real_distribution<T> d(lo, hi);
+      return d(mt_);
+    }
+  }
+
+  bool random_bool(float t_prob = 0.5f) {
+    std::bernoulli_distribution b(t_prob);
+    return b(mt_);
+  }
+
+ private:
+  std::mt19937 mt_;
+} RANDOM;
+
+#endif // TB_TB_H

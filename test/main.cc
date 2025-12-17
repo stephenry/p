@@ -27,8 +27,6 @@
 
 #include "tb/tb.h"
 
-#include "verilated/Vconv.h"
-
-int foo() {
-  return 42;
+int main(int argc, char** argv) {
+  return 0;
 }

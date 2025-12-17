@@ -25,9 +25,4 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-set(TB_SRCS
-  main.cc
-)
-
-add_executable(tb ${TB_SRCS})
-target_link_libraries(tb vlib ${P_PROJECT_LIBS})
+add_subdirectory(src)

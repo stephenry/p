@@ -26,12 +26,10 @@
 //========================================================================== //
 
 `include "common_defs.svh"
-`include "flops.svh"
 `include "conv_pkg.svh"
+`include "flops.svh"
 
-// Generic model to perform a convolution operation on streaming data.
-
-module conv (
+module conv_kernel (
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -39,26 +37,21 @@ module conv (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic                           s_tvalid_i
-, input wire conv_pkg::pixel_t               s_tdata_i
-, input wire logic                           s_tlast_i
-, input wire logic                           s_tuser_i
-
-, output wire logic                          s_tready_o
+  input wire logic                               col_push_i
+, input wire logic
+    [conv_pkg::KERNEL_DIAMETER_N - 1:0]          col_vld_i
+, input conv_pkg::pixel_span_t                   col_dat_i
+, input conv_pkg::kernel_pos_t                   col_pos_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
-// Output                                                                     //
+// kernel                                                                     //
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, input wire logic                           m_tready_i
-//
-, output wire logic                          m_tvalid_o
-, output wire conv_pkg::kernel_t             m_tdata_o
-, output wire logic                          m_tuser_o
-, output wire logic                          m_tlast_o
-
+, output wire logic                              kernel_vld_o
+, output conv_pkg::kernel_t                      kernel_dat_o
+, output conv_pkg::kernel_pos_t                  kernel_pos_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -66,8 +59,8 @@ module conv (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, input wire logic                           clk
-, input wire logic                           arst_n
+, input wire logic                               clk
+, input wire logic                               arst_n
 );
 
 // ========================================================================= //
@@ -76,31 +69,21 @@ module conv (
 //                                                                           //
 // ========================================================================= //
 
-// Stall:
-logic                                       stall;
-
-// Line Buffer wires:
-
-
-// kerneling wires:
-//
-logic                                       col0_push;
-conv_pkg::pixel_span_t                      col0_data;
+logic                                  dp_stall;
+logic                                  dp_pixel_row_vld;
+logic                                  dp_pixel_pos_vld;
 
 
-logic                                       kernel_vld;
-conv_pkg::kernel_t                          kernel_dat;
-conv_pkg::kernel_pos_t                      kernel_pos;
-conv_pkg::kernel_t                          kernel_dat_masked;
+conv_pkg::pixel_t
+  [conv_pkg::KERNEL_DIAMETER_N - 1:0]
+  [conv_pkg::KERNEL_DIAMETER_N - 1:1]  dp_pixel_row_dat_r;
 
-// Output registers:
-//
-`P_DFFR(logic, m_tvalid, 1'b0, arst_n, clk);
+localparam int DP_POS_N = 2;
 
-logic                                       m_tdata_en;
-`P_DFFE(conv_pkg::kernel_t, m_tdata, m_tdata_en, clk);
-`P_DFFE(logic, m_tuser, m_tdata_en, clk);
-`P_DFFE(logic, m_tlast, m_tdata_en, clk);
+logic [DP_POS_N:1]                     dp_pixel_pos_vld_r;
+conv_pkg::kernel_pos_t [DP_POS_N:1]    dp_pixel_pos_dat_r;
+
+conv_pkg::kernel_t                     kernel_dat;
 
 // ========================================================================= //
 //                                                                           //
@@ -108,88 +91,56 @@ logic                                       m_tdata_en;
 //                                                                           //
 // ========================================================================= //
 
-// ------------------------------------------------------------------------- //
-//
-assign stall = m_tvalid_r & ~m_tready_i;
+assign dp_stall = (~col_push_i);
+
+assign dp_pixel_row_vld = col_push_i & col_vld_i[2];
+
+assign dp_pixel_pos_vld = col_push_i & col_vld_i[2];
 
 // ------------------------------------------------------------------------- //
 //
 
-conv_lb0 u_conv_lb0 (
+for (genvar n = 0; n < conv_pkg::KERNEL_DIAMETER_N; n++) begin: n_GEN
+
+dp #(
+  .W(conv_pkg::PIXEL_W)
+, .N(conv_pkg::KERNEL_DIAMETER_N - 1)
+) u_dp_pixel_row (
+  .vld_i                    (col_vld_i[n])
+, .dat_i                    (col_dat_i[n])  
+, .stall_i                  (dp_stall)
 //
-  .pixel_vld_i             ()
-, .pixel_dat_i             ()
-, .pixel_eol_i             ()
+, .vld_o                    ()
+, .dat_o                    (dp_pixel_row_dat_r[n])
 //
-, .pixel_vld_o             ()
-, .pixel_dat_o             ()
-//
-, .stall_i                 (stall)
-//
-, .clk                     (clk)
-, .arst_n                  (arst_n)
+, .clk                      (clk)
+, .arst_n                   (arst_n)
 );
 
-for (genvar i = 1; i < conv_pkg::KERNEL_DIAMETER_N; i++) begin : conv_lb_GEN
+end: n_GEN
 
-conv_lbx u_conv_lbx (
+dp #(
+  .W(conv_pkg::KERNEL_POS_W)
+, .N(DP_POS_N)
+) u_dp_pixel_pos (
+  .vld_i                    (dp_pixel_pos_vld)
+, .dat_i                    (col_pos_i)  
+, .stall_i                  (dp_stall)
 //
-  .pixel_vld_i             ()
-, .pixel_dat_i             ()
-, .pixel_eol_i             ()
+, .vld_o                    (dp_pixel_pos_vld_r)
+, .dat_o                    (dp_pixel_pos_dat_r)
 //
-, .pixel_vld_o             ()
-, .pixel_dat_o             ()
-//
-, .stall_i                 (stall)
-//
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
-
-end : conv_lb_GEN
-
-// ------------------------------------------------------------------------- //
-//
-
-assign col0_push = 1'b0;
-
-assign col0_data = '0;
-
-conv_kernel u_conv_kernel (
-//
-  .col_push_i                ()
-, .col_vld_i                 ()
-, .col_dat_i                 ()
-, .col_pos_i                 ()
-//
-, .kernel_vld_o              ()
-, .kernel_dat_o              (kernel_dat)
-, .kernel_pos_o              (kernel_pos)
-//
-, .clk                       (clk)
-, .arst_n                    (arst_n)
-);
-
-// ------------------------------------------------------------------------- //
-// Combinational mask logic to zero out pixels that are outside the image
-// boundaries according to the nominated extension strategy.
-
-conv_mask u_conv_mask (
-//
-  .kernel_i                 (kernel_dat)
-, .kernel_pos_i             (kernel_pos)
-//
-, .kernel_masked_o          (kernel_dat_masked)
+, .clk                      (clk)
+, .arst_n                   (arst_n)
 );
 
 // ------------------------------------------------------------------------- //
 //
-assign m_tvalid_w = kernel_vld;
-assign m_tdata_w = kernel_dat_masked;
+for (genvar m = 0; m < conv_pkg::KERNEL_DIAMETER_N; m++) begin: kernel_dat_GEN
 
-assign m_tuser_w = 1'b0;
-assign m_tlast_w = 1'b0;
+assign kernel_dat[m] = { dp_pixel_row_dat_r[m], col_dat_i[m] };
+
+end: kernel_dat_GEN
 
 // ========================================================================= //
 //                                                                           //
@@ -197,14 +148,11 @@ assign m_tlast_w = 1'b0;
 //                                                                           //
 // ========================================================================= //
 
-assign m_tvalid_o = m_tvalid_r;
-assign m_tdata_o = m_tdata_r;
-assign m_tuser_o = m_tuser_r;
-assign m_tlast_o = m_tlast_r;
+assign kernel_vld_o = dp_pixel_pos_vld_r[DP_POS_N];
+assign kernel_dat_o = kernel_dat;
+assign kernel_pos_o = dp_pixel_pos_dat_r[DP_POS_N];
 
-assign s_tready_o = ~stall;
-
-endmodule : conv
+endmodule : conv_kernel
 
 `define FLOPS_UNDEF
 `include "flops.svh"

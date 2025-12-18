@@ -28,9 +28,8 @@
 ## OF THE POSSIBILITY OF SUCH DAMAGE.
 ## ==================================================================== ##
 
-set(VERILATOR_ROOT "/Users/shenry/github/verilator")
-
-if (EXISTS ${VERILATOR_ROOT})
+if (EXISTS $ENV{VERILATOR_ROOT})
+  set(VERILATOR_ROOT $ENV{VERILATOR_ROOT})
   set(VERILATOR_EXE ${VERILATOR_ROOT}/bin/verilator)
   execute_process(COMMAND ${VERILATOR_EXE} --version
     OUTPUT_VARIABLE Verilator_VER)

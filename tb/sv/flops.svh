@@ -28,7 +28,7 @@
 `ifndef TB_RTL_FLOPS_SVH
 `define TB_RTL_FLOPS_SVH
 
-`ifdef UNDEFINE_FLOPS
+`ifdef FLOPS_UNDEF
 
 `undef P_DFF
 `undef P_DFFE
@@ -65,3 +65,5 @@
       .d(__name``_w), .q(__name``_r), .en(__en), .arst_n(__arst_n), .clk(__clk))
 
 `endif
+
+`endif /* TB_RTL_FLOPS_SVH */

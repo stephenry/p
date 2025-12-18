@@ -26,29 +26,10 @@
 //========================================================================== //
 
 `include "common_defs.svh"
-`include "flops.svh"
 `include "conv_pkg.svh"
+`include "flops.svh"
 
-module conv_lb0 (
-
-// -------------------------------------------------------------------------- //
-//                                                                            //
-// Pixel In                                                                   //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-
-  input wire logic                          pixel_vld_i
-, input wire conv_pkg::pixel_t              pixel_dat_i
-, input wire logic                          pixel_eol_i
-
-// -------------------------------------------------------------------------- //
-//                                                                            //
-// Pixel Out                                                                  //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-
-, output wire logic                         pixel_vld_o
-, output wire conv_pkg::pixel_t             pixel_dat_o
+module conv_cntrl (
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -56,7 +37,18 @@ module conv_lb0 (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, input wire logic                          stall_i
+  input wire logic                          intf_vld_i
+, input wire logic                          intf_sof_i
+, input wire logic                          intf_eol_i
+, input conv_pkg::pixel_t                   intf_dat_i
+
+, output wire logic                         pos_vld_o
+, output conv_pkg::window_pos_t             pos_o
+
+, output wire logic                         lbx_nl_o
+, output wire logic [4:0]                   lbx_we_o
+, output wire logic [4:0]                   lbx_re_o
+, output conv_pkg::pixel_t                  lb0_dat_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -70,11 +62,9 @@ module conv_lb0 (
 
 // ========================================================================= //
 //                                                                           //
-// Wires                                                                     //
+// Wire(s)                                                                   //
 //                                                                           //
 // ========================================================================= //
-
-logic                                  pixel_dat_en;
 
 // ========================================================================= //
 //                                                                           //
@@ -82,25 +72,13 @@ logic                                  pixel_dat_en;
 //                                                                           //
 // ========================================================================= //
 
-`P_DFFE(conv_pkg::pixel_t, pixel_dat, pixel_dat_en, clk);
-
-assign pixel_dat_w  = pixel_dat_i;
-assign pixel_dat_en = pixel_vld_i & ~stall_i;
-
-`P_DFF(logic, pixel_vld, clk);
-
-assign pixel_vld_w = stall_i ? pixel_vld_r : pixel_vld_i;
-
 // ========================================================================= //
 //                                                                           //
 // Ouputs                                                                    //
 //                                                                           //
 // ========================================================================= //
 
-assign pixel_vld_o = pixel_vld_r;
-assign pixel_dat_o = pixel_dat_r;
-
-endmodule : conv_lb0
+endmodule : conv_cntrl
 
 `define FLOPS_UNDEF
 `include "flops.svh"

@@ -32,6 +32,7 @@ sources:
     - @CMAKE_CURRENT_SOURCE_DIR@/tb.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_pkg.svh
+    - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_lbx.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_lbx_asic.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_lbx_fpga.sv

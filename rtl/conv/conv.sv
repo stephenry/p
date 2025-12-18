@@ -76,16 +76,26 @@ module conv (
 //                                                                           //
 // ========================================================================= //
 
+// Controller:
+logic                                       cntrl_intf_vld;
+logic                                       cntrl_intf_sof;
+logic                                       cntrl_intf_eol;
+conv_pkg::pixel_t                           cntrl_intf_dat;
+
 // Stall:
 logic                                       stall;
 
 // Line Buffer wires:
-
+logic [conv_pkg::KERNEL_DIAMETER_N - 1:0]   lb_vld;
+conv_pkg::pixel_t
+  [conv_pkg::KERNEL_DIAMETER_N - 1:0]       lb_dat;
 
 // kerneling wires:
 //
 logic                                       col0_push;
+logic [conv_pkg::KERNEL_DIAMETER_N - 1:0]   col0_vld;
 conv_pkg::pixel_span_t                      col0_data;
+conv_pkg::kernel_pos_t                      col0_pos;
 
 
 logic                                       kernel_vld;
@@ -115,16 +125,32 @@ assign stall = m_tvalid_r & ~m_tready_i;
 // ------------------------------------------------------------------------- //
 //
 
-conv_lb0 u_conv_lb0 (
+
+// ------------------------------------------------------------------------- //
 //
-  .pixel_vld_i             ()
-, .pixel_dat_i             ()
-, .pixel_eol_i             ()
+
+// As per. problem definition, tuser is defined as Start-Of-Frame (SOF),
+// tlast is defined as End-Of-Line (EOL).
 //
-, .pixel_vld_o             ()
-, .pixel_dat_o             ()
+assign cntrl_intf_vld = s_tvalid_i;
+assign cntrl_intf_sof = s_tuser_i;
+assign cntrl_intf_eol = s_tlast_i;
+assign cntrl_intf_dat = s_tdata_i;
+
+conv_cntrl u_conv_cntrl (  
 //
-, .stall_i                 (stall)
+  .intf_vld_i              (cntrl_intf_vld)
+  .intf_sof_i              (cntrl_intf_sof)
+, .intf_eol_i              (cntrl_intf_eol)
+, .intf_dat_i              (cntrl_intf_dat)
+//
+, .pos_vld_o               ()
+, .pos_o                   ()
+//
+, .lbx_nl_o                ()
+, .lbx_we_o                ()
+, .lbx_re_o                ()
+, .lb0_dat_o               (lb_dat[0])
 //
 , .clk                     (clk)
 , .arst_n                  (arst_n)
@@ -138,8 +164,8 @@ conv_lbx u_conv_lbx (
 , .pixel_dat_i             ()
 , .pixel_eol_i             ()
 //
-, .pixel_vld_o             ()
-, .pixel_dat_o             ()
+, .pixel_vld_o             (lbx_vld[i])
+, .pixel_dat_o             (lbx_dat[i])
 //
 , .stall_i                 (stall)
 //
@@ -149,19 +175,35 @@ conv_lbx u_conv_lbx (
 
 end : conv_lb_GEN
 
+conv_lb0 u_conv_lb0 (
+//
+  .pixel_vld_i             ()
+, .pixel_dat_i             ()
+, .pixel_eol_i             ()
+//
+, .pixel_vld_o             (lb_vld[0])
+, .pixel_dat_o             (lb_dat[0])
+//
+, .stall_i                 (stall)
+//
+, .clk                     (clk)
+, .arst_n                  (arst_n)
+);
+
 // ------------------------------------------------------------------------- //
 //
 
-assign col0_push = 1'b0;
-
-assign col0_data = '0;
+assign col0_push = 'b0;
+assign col0_vld = {lbx_vld, lb0_vld};
+assign col0_data = {lbx_dat, lb0_dat};
+assign col0_pos = '0;
 
 conv_kernel u_conv_kernel (
 //
-  .col_push_i                ()
-, .col_vld_i                 ()
-, .col_dat_i                 ()
-, .col_pos_i                 ()
+  .col_push_i                (col0_push)
+, .col_vld_i                 (col0_vld)
+, .col_dat_i                 (col0_data)
+, .col_pos_i                 (col0_pos)
 //
 , .kernel_vld_o              ()
 , .kernel_dat_o              (kernel_dat)

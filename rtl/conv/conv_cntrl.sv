@@ -37,18 +37,23 @@ module conv_cntrl (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic                          intf_vld_i
-, input wire logic                          intf_sof_i
-, input wire logic                          intf_eol_i
-, input conv_pkg::pixel_t                   intf_dat_i
+  input wire logic                          s_tvalid_i
+, input wire conv_pkg::pixel_t              s_tdata_i
+, input wire logic                          s_tuser_i
+, input wire logic                          s_tlast_i
 
-, output wire logic                         pos_vld_o
-, output conv_pkg::window_pos_t             pos_o
+, input wire logic                          m_tready_i
+, input wire logic                          m_tvalid_o
 
-, output wire logic                         lbx_nl_o
-, output wire logic [4:0]                   lbx_we_o
-, output wire logic [4:0]                   lbx_re_o
+, output wire logic [4:0]                   lb_push_o
+, output wire logic [4:0]                   lb_eol_o
+, output wire logic [4:1]                   lb_pop_o
 , output conv_pkg::pixel_t                  lb0_dat_o
+, output wire logic [4:1]                   lbx_sel_o
+
+, output wire logic                         kernel_colD_push_o
+, output wire logic [4:0]                   kernel_colD_vld_o
+, output conv_pkg::window_pos_t             kernel_colD_pos_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //

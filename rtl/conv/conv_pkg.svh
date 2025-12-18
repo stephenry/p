@@ -31,10 +31,10 @@
 package conv_pkg;
 
 // Image Width
-localparam int IMAGE_MAX_W = 1920;  // Image width in pixels
+localparam int IMAGE_MAX_W = 4096;
 
 // Image Height
-localparam int IMAGE_H = 1080;  // Image height in pixels
+localparam int IMAGE_MAX_H = 4096;
 
 // Pixel width in bits
 localparam int PIXEL_W = 8;

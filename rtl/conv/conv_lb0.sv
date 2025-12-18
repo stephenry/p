@@ -37,9 +37,8 @@ module conv_lb0 (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic                          pixel_vld_i
-, input wire conv_pkg::pixel_t              pixel_dat_i
-, input wire logic                          pixel_eol_i
+  input wire logic                          push_i
+, input wire conv_pkg::pixel_t              dat_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -47,16 +46,7 @@ module conv_lb0 (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire logic                         pixel_vld_o
-, output wire conv_pkg::pixel_t             pixel_dat_o
-
-// -------------------------------------------------------------------------- //
-//                                                                            //
-// Control                                                                    //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-
-, input wire logic                          stall_i
+, output wire conv_pkg::pixel_t             colD_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -82,14 +72,7 @@ logic                                  pixel_dat_en;
 //                                                                           //
 // ========================================================================= //
 
-`P_DFFE(conv_pkg::pixel_t, pixel_dat, pixel_dat_en, clk);
 
-assign pixel_dat_w  = pixel_dat_i;
-assign pixel_dat_en = pixel_vld_i & ~stall_i;
-
-`P_DFF(logic, pixel_vld, clk);
-
-assign pixel_vld_w = stall_i ? pixel_vld_r : pixel_vld_i;
 
 // ========================================================================= //
 //                                                                           //
@@ -97,8 +80,6 @@ assign pixel_vld_w = stall_i ? pixel_vld_r : pixel_vld_i;
 //                                                                           //
 // ========================================================================= //
 
-assign pixel_vld_o = pixel_vld_r;
-assign pixel_dat_o = pixel_dat_r;
 
 endmodule : conv_lb0
 

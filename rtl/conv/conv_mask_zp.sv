@@ -77,64 +77,68 @@ logic [conv_pkg::KERNEL_DIAMETER_N - 1:0]
 // ========================================================================= //
 
 // -------------------------------------------------------------------------- //
-
 // Column masking:
 
 //  A B X C D
 //  A B X C D
-//  A B X C D
+//  A B O C D
 //  A B X C D
 //  A B X C D
 
 assign kill_col_a =                    kernel_pos_i.w2;
 assign kill_col_b = (kernel_pos_i.w1 | kernel_pos_i.w2);
 assign kill_col_c = (kernel_pos_i.e1 | kernel_pos_i.e2);
-assign kill_col_d = (                  kernel_pos_i.e2);
+assign kill_col_d =                    kernel_pos_i.e2;
 
 // -------------------------------------------------------------------------- //
-
 // Row masking:
 
 //   A A A A A
 //   B B B B B
-//   X X X X X
+//   X X O X X
 //   C C C C C
 //   D D D D D
 
 assign kill_row_a =                    kernel_pos_i.n2;
 assign kill_row_b = (kernel_pos_i.n1 | kernel_pos_i.n2);
 assign kill_row_c = (kernel_pos_i.s1 | kernel_pos_i.s2);
-assign kill_row_d = (                  kernel_pos_i.s2);
+assign kill_row_d =                    kernel_pos_i.s2;
 
 // -------------------------------------------------------------------------- //
 
-for (genvar m = 0; m < conv_pkg::KERNEL_DIAMETER_N; m++) begin : zero_pad_m_GEN
-    for (genvar n = 0; n < conv_pkg::KERNEL_DIAMETER_N; n++) begin: zero_pad_n_GEN
+for (genvar m = 0; m < conv_pkg::KERNEL_DIAMETER_N; m++) begin: zero_pad_m_GEN
 
-        // Compute zero-pad mask.
-        assign zero_pad[m][n] = 
-            ((m == 0) ? kill_row_a : 1'b0) |
-            ((m == 1) ? kill_row_b : 1'b0) |
-            ((m == 3) ? kill_row_c : 1'b0) |
-            ((m == 4) ? kill_row_d : 1'b0) |
-            ((n == 0) ? kill_col_a : 1'b0) |
-            ((n == 1) ? kill_col_b : 1'b0) |
-            ((n == 3) ? kill_col_c : 1'b0) |
-            ((n == 4) ? kill_col_d : 1'b0);
-    
-    end: zero_pad_n_GEN
+for (genvar n = 0; n < conv_pkg::KERNEL_DIAMETER_N; n++) begin: zero_pad_n_GEN
+
+// Compute zero-pad mask.
+//
+assign zero_pad[m][n] = 
+    ((m == 0) ? kill_row_a : 1'b0) |
+    ((m == 1) ? kill_row_b : 1'b0) |
+    ((m == 3) ? kill_row_c : 1'b0) |
+    ((m == 4) ? kill_row_d : 1'b0) |
+    ((n == 0) ? kill_col_a : 1'b0) |
+    ((n == 1) ? kill_col_b : 1'b0) |
+    ((n == 3) ? kill_col_c : 1'b0) |
+    ((n == 4) ? kill_col_d : 1'b0);
+
+end: zero_pad_n_GEN
+
 end: zero_pad_m_GEN
 
 // -------------------------------------------------------------------------- //
 
-for (genvar m = 0; m < conv_pkg::KERNEL_DIAMETER_N; m++) begin : row_GEN
-    for (genvar n = 0; n < conv_pkg::KERNEL_DIAMETER_N; n++) begin: col_GEN
-
-        // Kill pixel if in zero-pad region.
-        assign kernel_masked[m][n] =
-            ({conv_pkg::PIXEL_W{~zero_pad[m][n]}} & kernel_i[m][n]);
+for (genvar m = 0; m < conv_pkg::KERNEL_DIAMETER_N; m++) begin: row_GEN
     
-    end: col_GEN
+for (genvar n = 0; n < conv_pkg::KERNEL_DIAMETER_N; n++) begin: col_GEN
+
+// Kill pixel if in zero-pad region.
+//
+assign kernel_masked[m][n] =
+    ({conv_pkg::PIXEL_W{~zero_pad[m][n]}} & kernel_i[m][n]);
+
+end: col_GEN
+
 end: row_GEN
 
 // ========================================================================= //

@@ -52,6 +52,16 @@ module generic_bram #(
 // is clobbered on a subsequent write operation.
 , parameter bit HOLD_DOUT = 1'b0
 
+// On read/write collisions, select resolution policy.
+//
+// Options:
+//
+// "DEFER_WRITE" : Read takes priority; write is deferred.
+//
+// "WRITE_FIRST" : Write takes priority; read returns new data.
+//
+, parameter string COLLISION = "DEFER_WRITE"
+
 , localparam int ADDR_W = $clog2(WORDS_N)
 ) (
 

@@ -36,9 +36,12 @@ module conv_lbx (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic                          pixel_vld_i
-, input wire conv_pkg::pixel_t              pixel_dat_i
-, input wire logic                          pixel_eol_i
+  input wire logic [4:1]                    push_i
+, input wire logic [4:1]                    pop_i
+, input wire conv_pkg::pixel_t              dat_i
+, input wire logic                          sof_i
+, input wire logic                          eol_i
+, input wire logic [4:1]                    sel_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -46,16 +49,7 @@ module conv_lbx (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire logic                         pixel_vld_o
-, output wire conv_pkg::pixel_t             pixel_dat_o
-
-// -------------------------------------------------------------------------- //
-//                                                                            //
-// Control                                                                    //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-
-, input wire logic                          stall_i
+, output conv_pkg::pixel_t [4:1]            colD_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -67,21 +61,37 @@ module conv_lbx (
 , input wire logic                          arst_n
 );
 
+// ========================================================================= //
+//                                                                           //
+// Wire(s)                                                                   //
+//                                                                           //
+// ========================================================================= //
+
+conv_pkg::pixel_t [4:1]               lbx_colD;
+conv_pkg::pixel_t [4:1]               colD;
+
+// ========================================================================= //
+//                                                                           //
+// Logic                                                                     //
+//                                                                           //
+// ========================================================================= //
+
 generate case (conv_pkg::TARGET)
 
 "FPGA": begin: conv_lbx_fpga_GEN
 
 conv_lbx_fpga u_conv_lbx_fpga (
-  //
-    .pixel_vld_i             (pixel_vld_i)
-  , .pixel_dat_i             (pixel_dat_i)
-  , .pixel_eol_i             (pixel_eol_i)
-  //
-  , .pixel_dat_o             (pixel_dat_o)
-  , .pixel_vld_o             (pixel_vld_o)
-  //
-  , .clk                     (clk)
-  , .arst_n                  (arst_n)
+//
+  .push_i                 (push_i)
+, .pop_i                  (pop_i)
+, .dat_i                  (dat_i)
+, .sof_i                  (sof_i) 
+, .eol_i                  (eol_i)
+//
+, .colD_o                 (lbx_colD)
+//
+, .clk                    (clk)
+, .arst_n                 (arst_n)
 );
 
 end : conv_lbx_fpga_GEN
@@ -89,16 +99,17 @@ end : conv_lbx_fpga_GEN
 "ASIC": begin: conv_lbx_asic_GEN
 
 conv_lbx_asic u_conv_lbx_asic (
-  //
-    .pixel_vld_i             (pixel_vld_i)
-  , .pixel_dat_i             (pixel_dat_i)
-  , .pixel_eol_i             (pixel_eol_i)
-  //
-  , .pixel_dat_o             (pixel_dat_o)
-  , .pixel_vld_o             (pixel_vld_o)
-  //
-  , .clk                     (clk)
-  , .arst_n                  (arst_n)
+//
+  .push_i                 (push_i)
+, .pop_i                  (pop_i)
+, .dat_i                  (dat_i)
+, .sof_i                  (sof_i) 
+, .eol_i                  (eol_i)
+//
+, .colD_o                 (lbx_colD)
+//
+, .clk                    (clk)
+, .arst_n                 (arst_n)
 );
 
 end: conv_lbx_asic_GEN
@@ -111,5 +122,26 @@ end : conv_lbx_default_GEN
 
 endcase
 endgenerate
+
+// ------------------------------------------------------------------------- //
+
+always_comb begin: rotator_PROC
+
+  case (sel_i) inside
+    4'b0001: colD = {lbx_colD[2], lbx_colD[3], lbx_colD[4], lbx_colD[1]};
+    4'b0010: colD = {lbx_colD[3], lbx_colD[4], lbx_colD[1], lbx_colD[2]};
+    4'b0100: colD = {lbx_colD[4], lbx_colD[1], lbx_colD[2], lbx_colD[3]};
+    4'b1000: colD = {lbx_colD[1], lbx_colD[2], lbx_colD[3], lbx_colD[4]};
+    default: colD = 'x;
+
+end : rotator_PROC
+
+// ========================================================================= //
+//                                                                           //
+// Ouputs                                                                    //
+//                                                                           //
+// ========================================================================= //
+
+assign colD_o = colD;
 
 endmodule : conv_lbx

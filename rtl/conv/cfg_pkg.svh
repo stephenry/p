@@ -33,10 +33,10 @@
 package cfg_pkg;
 
 // Kernel extension strategy: "ZERO_PAD" | "REPLICATE"
-localparam string EXTEND_STRATEGY = `STRINGIFY(`TB_CFG__EXTEND_STRATEGY);
+localparam string EXTEND_STRATEGY = `TB_STRINGIFY(`TB_CFG__EXTEND_STRATEGY);
 
 // Parameter to define the target platform (e.g., "FPGA" or "ASIC").
-localparam string TARGET = `STRINGIFY(`TB_CFG__TARGET);
+localparam string TARGET = `TB_STRINGIFY(`TB_CFG__TARGET);
 
 endpackage : cfg_pkg
 

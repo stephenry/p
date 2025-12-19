@@ -30,11 +30,11 @@
 
 `ifdef TB_PKG_UNDEF
 
-`undef STRINGIFY
+`undef TB_STRINGIFY
 
 `else
 
-`define STRINGIFY(__x) `"__x`"
+`define TB_STRINGIFY(__x) `"__x`"
 
 `endif
 

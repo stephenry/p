@@ -157,7 +157,7 @@ assign s_tready_o = ~m_tready_i;
 //
 //  2: Pixel  0 (Determination Stage)
 //
-//     W2 iff: [Pixel 0 SOF] or [Pixel -1 EOL]
+//     W2 iff: [Pixel  0 SOF] or [Pixel -1 EOL]
 //
 //     W1 iff: [Pixel -1 SOF] or [Pixel -2 EOL]
 //
@@ -219,7 +219,7 @@ assign pos_s2 = pixel_pipe_r[3].sof;
 
 assign row_advance = pixel_pipe_r[2].eol;
 
-localparam logic [4:0] ROW_POS_INIT = 5'b00100;
+localparam logic [4:0] ROW_POS_INIT = 5'b00001;
 
 dffre #(.W(5), .INIT(ROW_POS_INIT)) u_dffr_row_pos (
   .d(row_pos_w), .q(row_pos_r), .en(row_pos_en), .arst_n(arst_n), .clk(clk));
@@ -302,21 +302,21 @@ generate case (conv_pkg::TARGET)
 "FPGA": begin: conv_lb_fpga_GEN
 
 for (genvar i = 0; i < 5; i++) begin: lb_GEN
-/*
+
 conv_cntrl_lb_fpga u_conv_cntrl_lb_fpga (
 //
-  .push_i                 (push_i)
-, .pop_i                  (pop_i)
-, .dat_i                  (dat_i)
-, .sof_i                  (sof_i) 
-, .eol_i                  (eol_i)
+  .push_i                 (lb_push[i])
+, .pop_i                  (lb_pop[i])
+, .dat_i                  (lb_dat)
+, .sof_i                  (lb_sof) 
+, .eol_i                  (lb_eol)
 //
-, .colD_o                 (lbx_colD)
+, .colD_o                 (lb_colD[i])
 //
 , .clk                    (clk)
 , .arst_n                 (arst_n)
 );
-*/
+
 end : lb_GEN
 
 end: conv_lb_fpga_GEN
@@ -355,17 +355,34 @@ endgenerate
 // ------------------------------------------------------------------------- //
 // Line buffer rotator.
 
+// Rotate line-buffer outputs based on image position.
+
 always_comb begin: lb_rotator_PROC
 
-/*
-  case (sel_i) inside
-    4'b0001: colD = {lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[1]};
-    4'b0010: colD = {lb_colD[3], lb_colD[4], lb_colD[1], lb_colD[2]};
-    4'b0100: colD = {lb_colD[4], lb_colD[1], lb_colD[2], lb_colD[3]};
-    4'b1000: colD = {lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4]};
-    default: colD = 'x;
+  case (5'b0000) inside
+    5'b00001: kernel_colD_data = {
+        lb_colD[4], lb_colD[3], lb_colD[2], lb_colD[1], lb_colD[0]
+      };
+
+    5'b00010: kernel_colD_data = {
+        lb_colD[3], lb_colD[2], lb_colD[1], lb_colD[0], lb_colD[4]
+      };
+
+    5'b00100: kernel_colD_data = {
+        lb_colD[2], lb_colD[1], lb_colD[0], lb_colD[4], lb_colD[3]
+      };
+    
+    5'b01000: kernel_colD_data = {
+        lb_colD[1], lb_colD[0], lb_colD[4], lb_colD[3], lb_colD[2]
+      };
+    
+    5'b10000: kernel_colD_data = {
+        lb_colD[0], lb_colD[4], lb_colD[3], lb_colD[2], lb_colD[1]
+      };
+
+    default: kernel_colD_data = 'x;
   endcase
-*/
+
 end : lb_rotator_PROC
 
 // ------------------------------------------------------------------------- //
@@ -392,7 +409,7 @@ dp #(
 , .N                       (2)
 , .TRACK_VALIDITY          (1'b1)
 ) u_dp_kernel_colD_push (
-  .vld_i                   (1'b1)
+  .vld_i                   (bank_vld_r[2])
 , .dat_i                   (bank_pop_sel_r)
 , .stall_i                 (cntrl_stall)
 , .pipe_vld_o              (/* UNUSED */)

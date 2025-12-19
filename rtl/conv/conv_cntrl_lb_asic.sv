@@ -357,7 +357,7 @@ assign skid_sel_en = skid_en | (skid_vld_r & ~stall_pop);
 //
 assign skid_sel_w = 
     skid_en
-  ? (stall_pop ? 'b01 : 'b10)                                       // (1)
+  ? (stall_pop ? 'b01 : 'b10)                                      // (1)
   : {skid_sel_r[PIXELS_PER_WORD_N-2:0], 1'b0};                     // (2)
 
 // Mux out selected pixel.

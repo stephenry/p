@@ -37,8 +37,8 @@ module conv_cntrl_lb_fpga (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic [4:1]                    push_i
-, input wire logic [4:1]                    pop_i
+  input wire logic                          push_i
+, input wire logic                          pop_i
 , input wire conv_pkg::pixel_t              dat_i
 , input wire logic                          sof_i
 , input wire logic                          eol_i
@@ -49,7 +49,7 @@ module conv_cntrl_lb_fpga (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire conv_pkg::pixel_t [4:1]      colD_o
+, output conv_pkg::pixel_t                  colD_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -78,8 +78,8 @@ typedef logic [ADDR_W-1:0] addr_t;
 logic                                  addr_en;
 `P_DFFE(addr_t, addr, addr_en, clk);
 addr_t                                 addr;
-logic [4:1]                            wen;
-logic [4:1]                            ren;
+logic                                  wen;
+logic                                  ren;
 
 // ========================================================================= //
 //                                                                           //
@@ -100,11 +100,9 @@ assign wen = push_i;
 
 assign ren = (push_i & pop_i);
 
-`P_DFFR(logic [4:1], dout_vld, 'b0, clk, arst_n);
+`P_DFFR(logic, dout_vld, 'b0, clk, arst_n);
 
 assign dout_vld_w = ren;
-
-for (genvar i = 1; i < 5; i++) begin : bram_GEN
 
 // FPGA BRAM instance offer true dual-port operation. Additionally,
 // they internally resolve read/write collisions without further logic.
@@ -118,28 +116,25 @@ generic_bram #(
 , .COLLISION        ("DEFER_WRITE")
 ) u_generic_bram (
 // Port A: Write
-  .cea              (wen[i])
+  .cea              (wen)
 , .addra            (addr)
 , .dina             (dat_i)
 , .rnwa             (1'b0)
 , .douta            (/* UNSUSED */)
 // Port B: Read
-, .ceb              (ren[i])
+, .ceb              (ren)
 , .addrb            (addr)
 , .dinb             ('b0)
 , .rnwb             (1'b1)
-, .doutb            (colD_w[i])
+, .doutb            (colD_w)
 );
 
-// Output flops to latch data read from BRAMs. This introduces
-// one additional cycle of latency, but is required to avoid
-// a BRAM.dout to BRAM.din combinational path between line buffers.
+// Introduce an additional flops stage to latency match ASIC version.
 
 logic                             colD_en;
-`P_DFFE(conv_pkg::pixel_t [4:1], colD, colD_en, clk);
+`P_DFFE(conv_pkg::pixel_t, colD, colD_en, clk);
 assign colD_en = (dout_vld_r != '0);
 
-end : bram_GEN
 
 // ========================================================================= //
 //                                                                           //

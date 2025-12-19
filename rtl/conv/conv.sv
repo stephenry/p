@@ -76,21 +76,11 @@ module conv (
 //                                                                           //
 // ========================================================================= //
 
-// Line Buffer wires:
-logic [4:0]                                 lb_push;
-logic [4:0]                                 lb_eol;
-logic [4:1]                                 lb_pop;
-logic [4:1]                                 lbx_sel;
-
-conv_pkg::pixel_t [3:0]                     lbx_colD;
-conv_pkg::pixel_t                           lb0_colD;
-
 // kerneling wires:
 //
-logic                                       kernel_colD_push;
-logic [4:0]                                 kernel_colD_vld;
-conv_pkg::pixel_t [4:0]                     kernel_colD_data;
+logic [4:0]                                 kernel_colD_push;
 conv_pkg::kernel_pos_t                      kernel_colD_pos;
+conv_pkg::pixel_t [4:0]                     kernel_colD_data;
 
 logic                                       kernel_vld;
 conv_pkg::kernel_t                          kernel_dat;
@@ -121,44 +111,14 @@ conv_cntrl u_conv_cntrl (
 , .s_tdata_i               (s_tdata_i)
 , .s_tuser_i               (s_tuser_i)
 , .s_tlast_i               (s_tlast_i)
+, .s_tready_o              (s_tready_o)
 //
 , .m_tready_i              (m_tready_i)
 , .m_tvalid_o              (m_tvalid_o)
 //
-, .lb_push_o               (lb_push)
-, .lb_eol_o                (lb_eol)
-, .lb_pop_o                (lb_pop)
-, .lb0_dat_o               (lb0_colD)
-, .lbx_sel_o               (lbx_sel_o)
-//
 , .kernel_colD_push_o      (kernel_colD_push)
-, .kernel_colD_vld_o       (kernel_colD_vld)
 , .kernel_colD_pos_o       (kernel_colD_pos)
-//
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
-
-conv_lbx u_conv_lbx (
-//
-  .push_i                  (lb_push[4:1])
-, .pop_i                   (lb_pop)
-, .dat_i                   (lb0_col0)
-, .eol_i                   (lb_eol)
-, .sel_i                   (lbx_sel_o)
-//
-, .colD_o                  (lbx_colD)
-//
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
-
-conv_lb0 u_conv_lb0 (
-//
-  .push_i                  (lb_push[0])
-, .dat_i                   (lb0_dat)
-//
-, .colD_o                  (lb0_colD)
+, .kernel_colD_data_o      (kernel_colD_data)
 //
 , .clk                     (clk)
 , .arst_n                  (arst_n)
@@ -168,12 +128,9 @@ conv_lb0 u_conv_lb0 (
 //
 
 
-assign kernel_colD_data = {lbx_colD, lb0_colD};
-
 conv_kernel u_conv_kernel (
 //
   .colD_push_i               (kernel_colD_push)
-, .colD_vld_i                (kernel_colD_vld)
 , .colD_dat_i                (kernel_colD_data)
 , .colD_pos_i                (kernel_colD_pos)
 //
@@ -215,8 +172,6 @@ assign m_tvalid_o = m_tvalid_r;
 assign m_tdata_o = m_tdata_r;
 assign m_tuser_o = m_tuser_r;
 assign m_tlast_o = m_tlast_r;
-
-assign s_tready_o = ~stall;
 
 endmodule : conv
 

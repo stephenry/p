@@ -33,10 +33,8 @@ sources:
     - @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_pkg.svh
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lbx.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lbx_asic.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lbx_fpga.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_lb0.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl_lb_asic.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl_lb_fpga.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_kernel.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_mask.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_mask_zp.sv

@@ -28,7 +28,7 @@
 `include "common_defs.svh"
 `include "conv_pkg.svh"
 
-module conv_lbx (
+module conv_cntrl_lb (
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -36,12 +36,12 @@ module conv_lbx (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic [4:1]                    push_i
-, input wire logic [4:1]                    pop_i
+  input wire logic [4:0]                    push_i
+, input wire logic [4:0]                    pop_i
 , input wire conv_pkg::pixel_t              dat_i
 , input wire logic                          sof_i
 , input wire logic                          eol_i
-, input wire logic [4:1]                    sel_i
+, input wire logic [4:0]                    sel_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -49,7 +49,7 @@ module conv_lbx (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output conv_pkg::pixel_t [4:1]            colD_o
+, output conv_pkg::pixel_t [4:0]            colD_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -67,8 +67,8 @@ module conv_lbx (
 //                                                                           //
 // ========================================================================= //
 
-conv_pkg::pixel_t [4:1]               lbx_colD;
-conv_pkg::pixel_t [4:1]               colD;
+conv_pkg::pixel_t [4:0]               lbx_colD;
+conv_pkg::pixel_t [4:0]               colD;
 
 // ========================================================================= //
 //                                                                           //
@@ -79,8 +79,8 @@ conv_pkg::pixel_t [4:1]               colD;
 generate case (conv_pkg::TARGET)
 
 "FPGA": begin: conv_lbx_fpga_GEN
-
-conv_lbx_fpga u_conv_lbx_fpga (
+/*
+conv_cntrl_lb_fpga u_conv_cntrl_lb_fpga (
 //
   .push_i                 (push_i)
 , .pop_i                  (pop_i)
@@ -93,12 +93,12 @@ conv_lbx_fpga u_conv_lbx_fpga (
 , .clk                    (clk)
 , .arst_n                 (arst_n)
 );
-
+*/
 end : conv_lbx_fpga_GEN
 
-"ASIC": begin: conv_lbx_asic_GEN
-
-conv_lbx_asic u_conv_lbx_asic (
+"ASIC": begin: conv_cntrl_lb_asic_GEN
+/*
+conv_cntrl_lb_asic u_conv_cntrl_lb_asic (
 //
   .push_i                 (push_i)
 , .pop_i                  (pop_i)
@@ -111,14 +111,14 @@ conv_lbx_asic u_conv_lbx_asic (
 , .clk                    (clk)
 , .arst_n                 (arst_n)
 );
+*/
+end: conv_cntrl_lb_asic_GEN
 
-end: conv_lbx_asic_GEN
-
-default: begin : conv_lbx_default_GEN
+default: begin : conv_cntrl_lb_default_GEN
 
 // TODO(stephenry): some static assertion here.
 
-end : conv_lbx_default_GEN
+end : conv_cntrl_lb_default_GEN
 
 endcase
 endgenerate
@@ -127,13 +127,15 @@ endgenerate
 
 always_comb begin: rotator_PROC
 
+/*
   case (sel_i) inside
     4'b0001: colD = {lbx_colD[2], lbx_colD[3], lbx_colD[4], lbx_colD[1]};
     4'b0010: colD = {lbx_colD[3], lbx_colD[4], lbx_colD[1], lbx_colD[2]};
     4'b0100: colD = {lbx_colD[4], lbx_colD[1], lbx_colD[2], lbx_colD[3]};
     4'b1000: colD = {lbx_colD[1], lbx_colD[2], lbx_colD[3], lbx_colD[4]};
     default: colD = 'x;
-
+  endcase
+*/
 end : rotator_PROC
 
 // ========================================================================= //
@@ -144,4 +146,4 @@ end : rotator_PROC
 
 assign colD_o = colD;
 
-endmodule : conv_lbx
+endmodule : conv_cntrl_lb

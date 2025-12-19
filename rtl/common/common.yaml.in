@@ -29,3 +29,4 @@ sources:
     - @CMAKE_CURRENT_SOURCE_DIR@/enc.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/mux.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/dp.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/common_pkg.svh

@@ -34,6 +34,9 @@ module dp #(
 
 // Total number of stages
 , parameter int N 
+
+// Deconfigure validity tracking to save resources
+, parameter bit TRACK_VALIDITY = 1'b1
 ) (
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -51,8 +54,11 @@ module dp #(
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire logic [N:1]                        vld_o
-, output wire logic [N:1][W - 1:0]               dat_o
+, output wire logic [N:1]                        pipe_vld_o
+, output wire logic [N:1][W - 1:0]               pipe_dat_o
+
+, output wire logic                              vld_o
+, output wire logic [W - 1:0]                    dat_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -90,13 +96,15 @@ if (i == 1) begin : dat_en_1_GEN
     assign dat_en[i] = vld_i & ~stall_i;
 end : dat_en_1_GEN
 else begin : dat_en_x_GEN
-    assign dat_en[i] = stall_i ? 1'b0 : vld_r[i - 1];
+    assign dat_en[i] = stall_i ? 1'b0 : (!TRACK_VALIDITY || vld_r[i - 1]);
 end : dat_en_x_GEN
 
 end : dat_en_GEN
 
 // ------------------------------------------------------------------------- //
 //
+if (TRACK_VALIDITY) begin : GEN_TRACK_VALIDITY
+
 for (genvar i = 1; i < (N + 1); i = i + 1) begin : vld_GEN
 
 if (i == 1) begin : vld_1_GEN
@@ -107,6 +115,8 @@ else begin : vld_x_GEN
 end : vld_x_GEN
 
 end : vld_GEN
+
+end: GEN_TRACK_VALIDITY
 
 // ------------------------------------------------------------------------- //
 //
@@ -119,10 +129,12 @@ dffe #(.W(W)) u_dp_stage (
   .d(dat_w[i - 1]), .q(dat_r [i]), .en(dat_en [i]), .clk(clk)
 );
 
+if (TRACK_VALIDITY) begin : GEN_TRACK_VALIDITY_FLOP
 // Validity
 dffr #(.W(1), .INIT(1'b0)) u_dp_vld (
   .d(vld_w[i - 1]), .q(vld_r [i]), .arst_n(arst_n), .clk(clk)
 );
+end: GEN_TRACK_VALIDITY_FLOP
 
 end : dp_stages_GEN
 
@@ -134,13 +146,19 @@ end : dp_stages_GEN
 
 if (N > 0) begin : GEN_OUTPUTS
 
-assign vld_o = vld_r;
-assign dat_o = dat_r;
+assign pipe_vld_o = TRACK_VALIDITY ? vld_r : 'b0;
+assign pipe_dat_o = dat_r;
+
+assign vld_o = TRACK_VALIDITY ? vld_r[N] : 1'b1;
+assign dat_o = dat_r[N];
 
 end else begin : GEN_NO_OUTPUTS
 
 // Degenerate case.
-assign vld_o = vld_i;
+assign pipe_vld_o = TRACK_VALIDITY ? vld_i : 'b0;
+assign pipe_dat_o = dat_i;
+
+assign vld_o = TRACK_VALIDITY ? vld_i : 1'b1;
 assign dat_o = dat_i;
 
 end : GEN_NO_OUTPUTS

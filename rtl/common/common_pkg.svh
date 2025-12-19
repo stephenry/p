@@ -25,34 +25,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`include "common_defs.svh"
+`ifndef RTL_COMMON_COMMON_PKG_SVH
+`define RTL_COMMON_COMMON_PKG_SVH
 
-// Behavioural model of a generic/typical ASIC SRAM module.
-//
-// Characteristics:
-//
-//  - Single ported operation.
-//
-//  - Dout is not retained between cycles.
-//
-//  - No aspect ration relaxations apply. Expect a minimum bit count
-//    of ~10kb to be compilable.
+package common_pkg;
 
-module generic_sram #(
-// Word width in bits
-  parameter int WORD_W
+// Constant function to compute ceiling of n/d
+function int ceil(int n, int d);
+  return (n + (d - 1)) / d;
+endfunction: ceil
 
-// Word count.
-, parameter int WORDS_N = 256
+endpackage: common_pkg
 
-, localparam int ADDR_W = $clog2(WORDS_N)
-) (
-  input wire logic                           ce
-, input wire logic [ADDR_W - 1:0]            addr
-, input wire logic [WORD_W - 1:0]            din
-, input wire logic                           rnw
 
-, output wire logic [WORD_W - 1:0]           dout
-);
-
-endmodule : generic_sram
+`endif // RTL_COMMON_COMMON_PKG_SVH

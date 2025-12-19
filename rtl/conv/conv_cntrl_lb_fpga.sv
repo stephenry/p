@@ -29,7 +29,7 @@
 `include "conv_pkg.svh"
 `include "flops.svh"
 
-module conv_lbx_fpga (
+module conv_cntrl_lb_fpga (
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -38,6 +38,7 @@ module conv_lbx_fpga (
 // -------------------------------------------------------------------------- //
 
   input wire logic [4:1]                    push_i
+, input wire logic [4:1]                    pop_i
 , input wire conv_pkg::pixel_t              dat_i
 , input wire logic                          sof_i
 , input wire logic                          eol_i
@@ -48,9 +49,7 @@ module conv_lbx_fpga (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, input wire logic [4:1]                    pop_i
-
-, output wire conv_pkg::pixel_t             colD_o
+, output wire conv_pkg::pixel_t [4:1]      colD_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -77,7 +76,7 @@ localparam ADDR_W = $clog2(conv_pkg::IMAGE_MAX_W);
 typedef logic [ADDR_W-1:0] addr_t;
 
 logic                                  addr_en;
-`D_DFFE(addr_t, addr, addr_en, clk);
+`P_DFFE(addr_t, addr, addr_en, clk);
 addr_t                                 addr;
 logic [4:1]                            wen;
 logic [4:1]                            ren;
@@ -95,13 +94,13 @@ assign addr_en = (push_i != '0);
 
 // Start-of-frame is coincident with the first push. The address must
 // therefore reset on the cycle cycle.
-assign addr = sof_i ? 'b0 : addr;
+assign addr = sof_i ? 'b0 : addr_w;
 
-assign wen = push_i
+assign wen = push_i;
 
-assign ren = (push_i & pop_i)
+assign ren = (push_i & pop_i);
 
-`P_DFFR(logic [4:1], dout_vld, 1'b0, clk, arst_n);
+`P_DFFR(logic [4:1], dout_vld, 'b0, clk, arst_n);
 
 assign dout_vld_w = ren;
 
@@ -140,8 +139,6 @@ logic                             colD_en;
 `P_DFFE(conv_pkg::pixel_t [4:1], colD, colD_en, clk);
 assign colD_en = (dout_vld_r != '0);
 
-assign colD_en = dout_vld;
-
 end : bram_GEN
 
 // ========================================================================= //
@@ -150,9 +147,9 @@ end : bram_GEN
 //                                                                           //
 // ========================================================================= //
 
-assign colD_o = colD;
+assign colD_o = 'b0;
 
-endmodule : conv_lbx_fpga
+endmodule : conv_cntrl_lb_fpga
 
 `define FLOPS_UNDEF
 `include "flops.svh"

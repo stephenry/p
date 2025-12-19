@@ -36,7 +36,6 @@ sources:
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl_lb_asic.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl_lb_fpga.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_kernel.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_mask.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/conv_mask_zp.sv
 
 include:

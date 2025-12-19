@@ -146,13 +146,33 @@ conv_kernel u_conv_kernel (
 // Combinational mask logic to zero out pixels that are outside the image
 // boundaries according to the nominated extension strategy.
 
-conv_mask u_conv_mask (
-//
-  .kernel_i                 (kernel_dat)
-, .kernel_pos_i             (kernel_pos)
-//
-, .kernel_masked_o          (kernel_dat_masked)
+generate case (conv_pkg::EXTEND_STRATEGY)
+
+"ZERO_PAD": begin: zero_pad_GEN
+
+conv_mask_zp u_conv_mask_zp (
+    .kernel_i           (kernel_dat)
+  , .kernel_pos_i       (kernel_pos)
+  , .kernel_masked_o    (kernel_dat_masked)
 );
+
+end: zero_pad_GEN
+
+"REPLICATE": begin : replicate_GEN
+
+// TODO(stephenry): implement replicate strategy.
+
+end : replicate_GEN
+
+default: begin: default_GEN
+
+// TODO(stephenry): static assertion to go here.
+
+end : default_GEN
+
+endcase
+endgenerate
+
 
 // ------------------------------------------------------------------------- //
 //

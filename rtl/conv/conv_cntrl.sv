@@ -361,23 +361,23 @@ always_comb begin: lb_rotator_PROC
 
   case (5'b0000) inside
     5'b00001: kernel_colD_data = {
-        lb_colD[4], lb_colD[3], lb_colD[2], lb_colD[1], lb_colD[0]
+        lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2]
       };
 
     5'b00010: kernel_colD_data = {
-        lb_colD[3], lb_colD[2], lb_colD[1], lb_colD[0], lb_colD[4]
+        lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3]
       };
 
     5'b00100: kernel_colD_data = {
-        lb_colD[2], lb_colD[1], lb_colD[0], lb_colD[4], lb_colD[3]
+        lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4]
       };
     
     5'b01000: kernel_colD_data = {
-        lb_colD[1], lb_colD[0], lb_colD[4], lb_colD[3], lb_colD[2]
+        lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0]
       };
     
     5'b10000: kernel_colD_data = {
-        lb_colD[0], lb_colD[4], lb_colD[3], lb_colD[2], lb_colD[1]
+        lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1]
       };
 
     default: kernel_colD_data = 'x;

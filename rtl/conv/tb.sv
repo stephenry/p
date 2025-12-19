@@ -27,15 +27,15 @@
 
 `include "common_defs.svh"
 `include "conv_pkg.svh"
+`include "cfg_pkg.svh"
 
-module tb (
+module tb`TB_CFG__SUFFIX (
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
 // Input                                                                      //
 //                                                                            //
 // -------------------------------------------------------------------------- //
-
 
   input wire logic                           s_tvalid_i
 , input wire conv_pkg::pixel_t               s_tdata_i
@@ -86,6 +86,15 @@ module tb (
 
 , output wire logic                          m_tuser_o
 , output wire logic                          m_tlast_o
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Parameterizations                                                          //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+, output wire string                         cfg_target_o
+, output wire string                         cfg_extend_strategy_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -148,4 +157,13 @@ assign m_tdata_4_2_o = m_tdata[4][2];
 assign m_tdata_4_3_o = m_tdata[4][3];
 assign m_tdata_4_4_o = m_tdata[4][4];
 
-endmodule: tb
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Parameterizations                                                          //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+assign cfg_target_o = cfg_pkg::TARGET;
+assign cfg_extend_strategy_o = cfg_pkg::EXTEND_STRATEGY;
+
+endmodule: tb`TB_CFG__SUFFIX

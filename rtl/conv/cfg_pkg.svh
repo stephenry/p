@@ -25,70 +25,23 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef RTL_CONV_CONV_PKG_SVH
-`define RTL_CONV_CONV_PKG_SVH
+`ifndef RTL_CONV_CFG_PKG_SVH
+`define RTL_CONV_CFG_PKG_SVH
 
 `include "tb_pkg.svh"
 
-package conv_pkg;
+package cfg_pkg;
 
-// Image Width
-localparam int IMAGE_MAX_W = 4096;
+// Kernel extension strategy: "ZERO_PAD" | "REPLICATE"
+localparam string EXTEND_STRATEGY = `STRINGIFY(`TB_CFG__EXTEND_STRATEGY);
 
-// Image Height
-localparam int IMAGE_MAX_H = 4096;
+// Parameter to define the target platform (e.g., "FPGA" or "ASIC").
+localparam string TARGET = `STRINGIFY(`TB_CFG__TARGET);
 
-// Pixel width in bits
-localparam int PIXEL_W = 8;
+endpackage : cfg_pkg
 
-// Pixel type
-typedef logic [PIXEL_W - 1:0] pixel_t;
+`endif /* RTL_CONV_CFG_PKG_SVH */
 
-// Convoution kernel diameter, must be odd.
-//
-// (NOTE: RTL has not been written with sufficient parameterization to allow 
-// for this value to be changed.)
-localparam int KERNEL_DIAMETER_N = 5;
-
-typedef pixel_t [KERNEL_DIAMETER_N - 1:0] pixel_span_t;
-
-// Kernel type (KERNEL_N * KERNEL_N pixels)
-typedef pixel_t [KERNEL_DIAMETER_N - 1:0][KERNEL_DIAMETER_N - 1:0] kernel_t;
-
-// Position map for convolution kernel:
-
-//        A          B                    C         D
-//   +--------------------------------------------------+
-// A | {N2,W2} | {N2,W1} | { N2, X} | {N2,E1} | {N2,E2} |
-// B | {N1,W2} | {N1,W1} | { N1, X} | {N1,E1} | {N1,E2} |
-//   | { X,W2} | { X,W1} | {  X, X} | { X,E1} | { X,E2} |
-// C | {S1,W2} | {S1,W1} | { S1, X} | {S1,E1} | {S1,E2} |
-// D | {S2,W2} | {S2,W1} | { S2, X} | {S2,E1} | {S2,E2} |
-//   +--------------------------------------------------+
-
-// Window position structure:
-typedef struct packed {
-
-    // West
-    logic w2;
-    logic w1;
-
-    // East:
-    logic e2;
-    logic e1;
-
-    // North:
-    logic n2;
-    logic n1;
-
-    // South:
-    logic s2;
-    logic s1;
-
-} kernel_pos_t;
-
-localparam int KERNEL_POS_W = $bits(kernel_pos_t);
-
-endpackage : conv_pkg
-
-`endif /* RTL_CONV_CONV_PKG_SVH */
+`define TB_PKG_UNDEF
+`include "tb_pkg.svh"
+`undef TB_PKG_UNDEF

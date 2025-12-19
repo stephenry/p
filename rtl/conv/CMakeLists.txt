@@ -30,7 +30,7 @@ generate_project(
     conv
 
     YAML_IN
-    ${CMAKE_CURRENT_SOURCE_DIR}/conv.yaml.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/conv_asic_zeropad.yaml.in
 
     CC_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/tb.cc

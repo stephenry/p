@@ -60,7 +60,7 @@ assign idx[i] = i[$clog2(W) - 1:0];
 
 end : idx_GEN
 
-mux #(.N(W), .W($clog2(W))) u_idx_mux (.x_i(idx), .i_sel(x_i), .y_o(y));
+mux #(.N(W), .W($clog2(W))) u_idx_mux (.x_i(idx), .sel_i(x_i), .y_o(y));
 
 // ========================================================================== //
 //                                                                            //

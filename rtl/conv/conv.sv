@@ -28,6 +28,7 @@
 `include "common_defs.svh"
 `include "flops.svh"
 `include "conv_pkg.svh"
+`include "cfg_pkg.svh"
 
 // Generic model to perform a convolution operation on streaming data.
 
@@ -146,7 +147,7 @@ conv_kernel u_conv_kernel (
 // Combinational mask logic to zero out pixels that are outside the image
 // boundaries according to the nominated extension strategy.
 
-generate case (conv_pkg::EXTEND_STRATEGY)
+generate case (cfg_pkg::EXTEND_STRATEGY)
 
 "ZERO_PAD": begin: zero_pad_GEN
 

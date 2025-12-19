@@ -32,6 +32,7 @@ sources:
     - @CMAKE_CURRENT_SOURCE_DIR@/dffre.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/generic_bram.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/generic_sram.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/tb_pkg.svh
 
 directories:
     - @CMAKE_CURRENT_SOURCE_DIR@/

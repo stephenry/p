@@ -77,6 +77,10 @@ class Verilator:
             f"--unused-regexp UNUSED_*",
         ]
 
+        if 'defines' in self._project:
+            for k, v in self._project['defines'].items():
+                cmds.append(f'-D{k}={v}')
+
         if True:
             cmds.append(f"--trace")
 

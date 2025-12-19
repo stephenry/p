@@ -25,8 +25,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#include "Vtb_asic_zeropad.h"
+`ifndef TB_SV_TB_PKG_SVH
+`define TB_SV_TB_PKG_SVH
 
-int foo() {
-  return 42;
-}
+`ifdef TB_PKG_UNDEF
+
+`undef STRINGIFY
+
+`else
+
+`define STRINGIFY(__x) `"__x`"
+
+`endif
+
+`endif

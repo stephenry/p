@@ -28,6 +28,7 @@
 `include "common_defs.svh"
 `include "conv_pkg.svh"
 `include "flops.svh"
+`include "cfg_pkg.svh"
 
 module conv_cntrl (
 
@@ -297,7 +298,7 @@ assign bank_pop_sel_w = {bank_pop_sel_r[3:0], bank_pop_sel_r[4]};
 assign lb_pop = cntrl_stall ? 5'b00000 : bank_vld_r;
 assign lb_sel = bank_pop_sel_r;
 
-generate case (conv_pkg::TARGET)
+generate case (cfg_pkg::TARGET)
 
 "FPGA": begin: conv_lb_fpga_GEN
 

@@ -96,8 +96,8 @@ typedef logic [ADDR_W-1:0] addr_t;
 
 logic                                       addr_en;
 `P_DFFE(addr_t, addr, addr_en, clk);
-logic [4:0][1:0]                            wen;
-logic [4:0][1:0]                            ren;
+logic [1:0]                                 wen;
+logic [1:0]                                 ren;
 
 // ------------------------------------------------------------------------- //
 // Push Path
@@ -109,10 +109,10 @@ logic [PIXELS_PER_WORD_N-2:0]               word_vld_w;
 logic [PIXELS_PER_WORD_N-2:0]               word_vld_r;
 logic [PIXELS_PER_WORD_N-1:0]               word_admit_dat;
 
-localparam logic [PIXELS_PER_WORD_N-1:0] WORD_NEXT_INI = 'b1;
+localparam logic [PIXELS_PER_WORD_N-1:0] WORD_NEXT_INIT = 'b1;
 logic                                       word_next_en;
 `P_DFFRE(logic [PIXELS_PER_WORD_N-1:0], word_next, word_next_en,
-           PIXELS_PER_WORD_N, arst_n, clk);
+           WORD_NEXT_INIT, arst_n, clk);
 
 // Final composed word for SRAM interface.
 conv_pkg::pixel_t [PIXELS_PER_WORD_N-1:0]  word_din;
@@ -152,12 +152,12 @@ logic [1:0] dout_bank_mux_sel;
 // SRAM skid buffer
 logic                                      skid_en;
 `P_DFFE(sram_word_t, skid, skid_en, clk);
-`P_DFFR(logic, skid_vld, skid_en, 'b0, clk);
+`P_DFFR(logic, skid_vld, 'b0, arst_n, clk);
 
 logic                                      skid_sel_en;
 `P_DFFRE(logic [PIXELS_PER_WORD_N-1:0], skid_sel, skid_sel_en, 'b1,
    arst_n, clk);
-sram_word_t                                skid_demux;
+conv_pkg::pixel_t                          skid_demux;
 
 
 // ------------------------------------------------------------------------- //
@@ -223,7 +223,7 @@ if (i < (PIXELS_PER_WORD_N - 1)) begin : not_last_GEN
   assign word_din[i] = word_admit_dat[i] ? dat_i : word_r[i];
 
 end: not_last_GEN
-begin: last_GEN
+else begin: last_GEN
 
   assign word_admit_dat[i] = (word_vld_r == '1);
 
@@ -277,15 +277,14 @@ assign bank_sel_w = ~bank_sel_r;
 // SRAM control signals.
 
 // Upto 1 write supported per cycle.
-assign wen[1] = ( bank_sel_r & advance_push) ? push_i : 'b0;
-assign wen[0] = (~bank_sel_r & advance_push) ? push_i : 'b0;
+assign wen[1] = ( bank_sel_r & advance_push) ? push_i : 1'b0;
+assign wen[0] = (~bank_sel_r & advance_push) ? push_i : 1'b0;
 
-assign ren[1] = (~bank_sel_r & advance_pop) ? pop_i : 'b0;
-assign ren[0] = ( bank_sel_r & advance_pop) ? pop_i : 'b0;
-
+assign ren[1] = (~bank_sel_r & advance_pop) ? pop_i : 1'b0;
+assign ren[0] = ( bank_sel_r & advance_pop) ? pop_i : 1'b0;
 // Chip-enable signals for SRAMs.
-assign ce[1] = ( bank_sel_r ? (wen[1] | ren[1]) : '0);
-assign ce[0] = (~bank_sel_r ? (wen[0] | ren[0]) : '0);
+assign ce[1] = ( bank_sel_r ? (wen[1] | ren[1]) : 1'b0);
+assign ce[0] = (~bank_sel_r ? (wen[0] | ren[0]) : 1'b0);
 
 // Read-not-write signals for SRAMs.
 assign rnw[1] = ( bank_sel_r ? ~wen[1] : '1);
@@ -307,11 +306,11 @@ for (genvar bnk = 0; bnk < 2; bnk++) begin: bank_GEN
 
 generic_sram #(
   .WORD_W          (SRAM_W)
-, .WORDS_N         (conv_pkg::IMAGE_MAX_W)
+, .WORDS_N         (SRAM_WORDS_N)
 ) u_generic_sram (
   .ce              (ce[bnk])
 , .addr            (addr_r)
-, .din             (dat_i)
+, .din             (word_din)
 , .rnw             (rnw[bnk])
 , .dout            (dout[bnk])
 );

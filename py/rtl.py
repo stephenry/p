@@ -163,6 +163,10 @@ class RTLRenderer:
                 project['directories'] = list()
             project['directories'].extend(inc_project['directories'])
 
+        if 'include' in inc_project:
+            for inc in inc_project['include']:
+                self._load_project_include(project, inc)
+
     def render_rtl(self) -> typing.Tuple[bool, list[str]]:
         files = list()
 

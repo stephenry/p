@@ -1,4 +1,4 @@
-##========================================================================== ##
+##========================================================================== //
 ## Copyright (c) 2025, Stephen Henry
 ## All rights reserved.
 ##
@@ -23,15 +23,10 @@
 ## CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
-##========================================================================== ##
+##========================================================================== //
 
-top: tb_asic_zeropad
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/conv.yaml.in
+    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
+)
 
-include:
-    # Pull in common useful definitions
-    - @CMAKE_BINARY_DIR@/rtl/conv/conv.yaml
-
-defines:
-    TB_CFG__SUFFIX: _asic_zeropad
-    TB_CFG__TARGET: ASIC
-    TB_CFG__EXTEND_STRATEGY: ZERO_PAD

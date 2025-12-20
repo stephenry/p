@@ -55,12 +55,15 @@ macro (generate_project)
 
         configure_file(${YAML_IN} ${project_fn})
 
+        set(generated_root ${CMAKE_CURRENT_BINARY_DIR}/${v_instance})
+        target_include_directories(${arg_NAME} PRIVATE ${generated_root})
+
         # RTL rendering will generate these directories, but CMAKE requires that they be
         # present at configuration-time.
-        set(rtl_dir ${CMAKE_CURRENT_BINARY_DIR}/${v_instance}/rtl)
+        set(rtl_dir ${generated_root}/rtl)
         file(MAKE_DIRECTORY ${rtl_dir})
 
-        set(vout_dir ${CMAKE_CURRENT_BINARY_DIR}/${v_instance}/v)
+        set(vout_dir ${generated_root}/v)
         file(MAKE_DIRECTORY ${vout_dir})
 
         # RTL rendering target

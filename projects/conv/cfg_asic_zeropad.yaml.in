@@ -25,19 +25,17 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== ##
 
+top: tb_asic_zeropad
+
 sources:
     # Project files
     - @CMAKE_CURRENT_SOURCE_DIR@/tb.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_pkg.svh
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl_lb_asic.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_cntrl_lb_fpga.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_kernel.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/conv_mask_zp.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/cfg_pkg.svh
 
 include:
     # Pull in common useful definitions
-    - @CMAKE_BINARY_DIR@/tb/sv/common.yaml
-    - @CMAKE_BINARY_DIR@/rtl/common/common.yaml
+    - @CMAKE_CURRENT_BINARY_DIR@/rtl/conv.yaml
+
+defines:
+    TB_CFG__SUFFIX: _asic_zeropad
+    TB_CFG__TARGET: ASIC
+    TB_CFG__EXTEND_STRATEGY: ZERO_PAD

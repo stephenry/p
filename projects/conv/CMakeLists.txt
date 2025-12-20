@@ -25,18 +25,15 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/conv.yaml.in
-    ${CMAKE_CURRENT_BINARY_DIR}/conv.yaml
-)
-
 generate_project(
     NAME
     conv
 
     YAML_IN
-    ${CMAKE_CURRENT_SOURCE_DIR}/conv_asic_zeropad.yaml.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/cfg_asic_zeropad.yaml.in
 
     CC_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/tb.cc
 )
+
+add_subdirectory(rtl)

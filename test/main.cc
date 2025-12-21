@@ -140,19 +140,23 @@ void Driver::run_job(const Job& job) {
   std::unique_ptr<tb::ProjectInstanceBuilderBase> instance_builder =
     project_builder->construct_instance(job.instance_name);
 
+  // Construct project instance.
+  std::unique_ptr<tb::ProjectInstanceBase> instance{
+    instance_builder->construct()};
+
   // Construct test (with arguments, if present)
   std::unique_ptr<tb::ProjectTestBuilderBase> test_builder =
-    project_builder->construct_test(job.test_name, job.test_args);
-
-  // Construct project instance.
-  std::unique_ptr<tb::ProjectInstanceBase> instance{instance_builder->construct()};
+    project_builder->construct_test(job.test_name);
 
   // Construct project instance test.
-  std::unique_ptr<tb::ProjectTestBase> test{test_builder->construct()};
+  std::unique_ptr<tb::ProjectTestBase> test{
+    test_builder->construct(job.test_args)};
 
   // Run test on instance.
-  tb::ProjectInstanceRunner runner(instance.get(), test.get());
-  runner.run();
+  std::unique_ptr<tb::ProjectInstanceRunner> runner =
+    tb::ProjectInstanceRunner::Build(
+      tb::ProjectInstanceRunner::Type::Default, instance.get(), test.get());
+  runner->run();
 }
 
 } // namespace

@@ -72,9 +72,10 @@ public:                                                                     \
 #define TB_PROJECT_ADD_TEST(__project_class, __project_instance_test)       \
 class tb_project_add_test_helper_##__project_class {                        \
   struct InstanceBuilder : public tb::ProjectTestBuilderBase {              \
-    std::unique_ptr<tb::ProjectTestBase> construct() const override {       \
+    std::unique_ptr<tb::ProjectTestBase> construct(                         \
+      const std::string& args) const override {                             \
       return std::unique_ptr<tb::ProjectTestBase>(                          \
-        new __project_instance_test());                                     \
+        new __project_instance_test(args));                                 \
     }                                                                       \
   };                                                                        \
 public:                                                                     \
@@ -102,6 +103,10 @@ class ProjectInstanceBase {
   // Design name
   virtual const std::string& name() const noexcept { return name_; }
 
+  virtual void elaborate() {}
+  virtual void initialize() {}
+  virtual void finalize() {}
+
  private:
   // Design name.
   std::string name_;
@@ -117,15 +122,18 @@ class ProjectInstanceBuilderBase {
 
 class ProjectTestBase {
  public:
-  explicit ProjectTestBase(const std::string& name) : name_(name) {}
+  explicit ProjectTestBase(const std::string& args)
+    : args_(args)
+  {}
 
   virtual ~ProjectTestBase() = default;
+  
   // Design name
-  virtual const std::string& name() const noexcept { return name_; }
+  virtual const std::string& args() const noexcept { return args_; }
 
  private:
-  // Design name.
-  std::string name_;
+  // Test arguments.
+  std::string args_;
 };
 
 class ProjectTestBuilderBase {
@@ -133,7 +141,8 @@ class ProjectTestBuilderBase {
   explicit ProjectTestBuilderBase() = default;
   virtual ~ProjectTestBuilderBase() = default;
 
-  virtual std::unique_ptr<ProjectTestBase> construct() const = 0;
+  virtual std::unique_ptr<ProjectTestBase> construct(
+    const std::string& args) const = 0;
 };
 
 class ProjectBuilderBase {
@@ -161,7 +170,7 @@ class ProjectBuilderBase {
     const std::string& instance_name) { return nullptr; }
   
   std::unique_ptr<ProjectTestBuilderBase> construct_test(
-    const std::string& test_name, const std::string& test_args) { return nullptr; }
+    const std::string& test_name) { return nullptr; }
 
 
  private:
@@ -190,15 +199,24 @@ inline class ProjectRegistry {
 } PROJECT_REGISTRY;
 
 class ProjectInstanceRunner {
-public:
+protected:
+
   explicit ProjectInstanceRunner(ProjectInstanceBase* instance, ProjectTestBase* test)
     : instance_(instance), test_(test) {};
-  
-    virtual ~ProjectInstanceRunner();
-  
-  virtual void run();
 
-private:
+public:
+  enum class Type {
+    Default,
+  };
+  
+  static std::unique_ptr<ProjectInstanceRunner> Build(
+    Type t, ProjectInstanceBase* instance, ProjectTestBase* test);
+  
+  virtual ~ProjectInstanceRunner() = default;
+  
+  virtual void run() = 0;
+
+protected:
   ProjectInstanceBase* instance_;
   ProjectTestBase* test_;
 

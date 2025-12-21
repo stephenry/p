@@ -25,72 +25,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef TB_TB_PROJECT_H
-#define TB_TB_PROJECT_H
-
-#include "tb/tb.h"
+#ifndef TB_TB_VSUPPORT_H
+#define TB_TB_VSUPPORT_H
 
 #include "verilated.h"
 
-namespace tb {
+namespace tb::vsupport {
 
-template<typename UUT>
-class GenericSynchronousProjectInstance : public ProjectInstanceBase {
-protected:
+vluint8_t to_v(bool b) { return b ? 1 : 0; }
 
-    struct {
+template<typename T>
+T from_v(vluint8_t v) { return (v != 0); }
 
-        bool reset_async = true;
+} // namespace tb::vsupport
 
-        bool reset_active_high = false;
-
-    } opts;
-
-public:
-
-
-    explicit GenericSynchronousProjectInstance(const std::string& name)
-        : ProjectInstanceBase(name) {}
-
-    virtual ~GenericSynchronousProjectInstance() = default;
-
-    virtual void elaborate();
-    virtual void initialize();
-    virtual void run();
-    virtual void finalize();
-
-protected:
-
-    // Port pointers to be set by derived classes before start of simulation.
-    struct {
-        vluint8_t* clk;
-
-        vluint8_t* rst;
-    } ports;
-
-    // Handle to UUT
-    UUT* uut() const { return uut_.get(); }
-
-private:
-    std::unique_ptr<UUT> uut_;
-};
-
-template<typename UUT>
-void GenericSynchronousProjectInstance<UUT>::elaborate() {
-}
-
-template<typename UUT>
-void GenericSynchronousProjectInstance<UUT>::initialize() {
-}
-
-template<typename UUT>
-void GenericSynchronousProjectInstance<UUT>::run() {
-}
-
-template<typename UUT>
-void GenericSynchronousProjectInstance<UUT>::finalize() {
-}
-
-} // namespace tb
-
-#endif // TB_TB_PROJECT_H
+#endif // TB_TB_VSUPPORT_H

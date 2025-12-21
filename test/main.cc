@@ -25,24 +25,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#include "tb/tb.h"
-
 #include <algorithm>
 #include <iostream>
-#include <optional>
 #include <memory>
-#include <vector>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <vector>
+
+#include "tb/tb.h"
 
 #define P_TEST_ASSERT(__cond, __msg)
 
 namespace {
 
 struct Job {
-
   // Project to be run.
   std::string project_name;
 
@@ -57,22 +55,20 @@ struct Job {
 };
 
 class Driver {
-    explicit Driver(const std::vector<Job>& jobs);
-  public:
+  explicit Driver(const std::vector<Job>& jobs);
 
+ public:
   static std::unique_ptr<Driver> from_args(int argc, char** argv);
 
   int run();
 
-private:
+ private:
   void run_job(const Job& job);
 
   std::vector<Job> jobs_;
 };
 
-Driver::Driver(const std::vector<Job>& jobs)
-  : jobs_(jobs)
-{}
+Driver::Driver(const std::vector<Job>& jobs) : jobs_(jobs) {}
 
 std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
   // Parse command line arguments to populate options.
@@ -89,7 +85,8 @@ std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
     } else if (args[i] == "-i" || args[i] == "--instance") {
       // Test name
       P_TEST_ASSERT(!jobs.empty(), "No prior test defined!");
-      P_TEST_ASSERT((i + 1) < args.size(), "Missing argument after -i/--instance");
+      P_TEST_ASSERT((i + 1) < args.size(),
+                    "Missing argument after -i/--instance");
 
       Job& current_job{jobs.back()};
       current_job.instance_name = args[++i];
@@ -134,32 +131,32 @@ int Driver::run() {
 void Driver::run_job(const Job& job) {
   // Construct project
   tb::ProjectBuilderBase* project_builder{
-    tb::PROJECT_REGISTRY.lookup(job.project_name)};
+      tb::PROJECT_REGISTRY.lookup(job.project_name)};
 
   // Construct instance (of project)
   std::unique_ptr<tb::ProjectInstanceBuilderBase> instance_builder =
-    project_builder->construct_instance(job.instance_name);
+      project_builder->construct_instance(job.instance_name);
 
   // Construct project instance.
   std::unique_ptr<tb::ProjectInstanceBase> instance{
-    instance_builder->construct()};
+      instance_builder->construct()};
 
   // Construct test (with arguments, if present)
   std::unique_ptr<tb::ProjectTestBuilderBase> test_builder =
-    project_builder->construct_test(job.test_name);
+      project_builder->construct_test(job.test_name);
 
   // Construct project instance test.
   std::unique_ptr<tb::ProjectTestBase> test{
-    test_builder->construct(job.test_args)};
+      test_builder->construct(job.test_args)};
 
   // Run test on instance.
   std::unique_ptr<tb::ProjectInstanceRunner> runner =
-    tb::ProjectInstanceRunner::Build(
-      tb::ProjectInstanceRunner::Type::Default, instance.get(), test.get());
+      tb::ProjectInstanceRunner::Build(tb::ProjectInstanceRunner::Type::Default,
+                                       instance.get(), test.get());
   runner->run();
 }
 
-} // namespace
+}  // namespace
 
 int main(int argc, char** argv) {
   try {

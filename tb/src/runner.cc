@@ -30,43 +30,40 @@
 namespace {
 
 class DefaultProjectRunner final : public tb::ProjectInstanceRunner {
-public:
-    explicit DefaultProjectRunner(
-        tb::ProjectInstanceBase* instance, tb::ProjectTestBase* test)
-        : tb::ProjectInstanceRunner(instance, test)
-    {}
+ public:
+  explicit DefaultProjectRunner(tb::ProjectInstanceBase* instance,
+                                tb::ProjectTestBase* test)
+      : tb::ProjectInstanceRunner(instance, test) {}
 
-    void run() override {
-        // Elaborate model.
-        instance_->elaborate();
+  void run() override {
+    // Elaborate model.
+    instance_->elaborate();
 
-        // Initialize instance
-        instance_->initialize();
+    // Initialize instance
+    instance_->initialize();
 
-        // [TODO] Run test on instance
+    // [TODO] Run test on instance
 
-        // Finalize instance
-        instance_->finalize();
-    }
-
+    // Finalize instance
+    instance_->finalize();
+  }
 };
 
-} // namespace
+}  // namespace
 
 namespace tb {
 
 std::unique_ptr<ProjectInstanceRunner> ProjectInstanceRunner::Build(
     Type t, ProjectInstanceBase* instance, ProjectTestBase* test) {
-    
-    std::unique_ptr<ProjectInstanceRunner> runner;
-    switch (t) {
+  std::unique_ptr<ProjectInstanceRunner> runner;
+  switch (t) {
     case Type::Default:
-        runner = std::make_unique<DefaultProjectRunner>(instance, test);
-        break;
+      runner = std::make_unique<DefaultProjectRunner>(instance, test);
+      break;
     default:
-        throw std::runtime_error("Unknown ProjectInstanceRunner type");
-    }
-    return runner;
-}  
+      throw std::runtime_error("Unknown ProjectInstanceRunner type");
+  }
+  return runner;
+}
 
-} // namespace tb
+}  // namespace tb

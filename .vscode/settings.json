@@ -1,4 +1,15 @@
 {
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "C_Cpp.clang_format_style": "file", // Crucial: Uses your .clang-format
+    "C_Cpp.formatting": "clangFormat", // Ensures clang-format engine
+    "editor.formatOnSave": true, // Optional: Auto-format on save
+    "editor.formatOnType": true, // Optional: Format while typing
+    "editor.formatOnPaste": true, // Optional
     "search.exclude": {
         "**/build/**": true
     }

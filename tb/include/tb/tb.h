@@ -29,10 +29,183 @@
 #define TB_TB_H 
 
 #include <limits>
+#include <memory>
 #include <random>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <vector>
+#include <unordered_map>
+
+namespace tb {
+
+// Global testbench options
+inline struct Options {
+
+} tb_options;
+
+#define TB_PROJECT_CREATE(__project_class)                   \
+class tb_project_create_helper_##__project_class {           \
+public:                                                      \
+  explicit tb_project_create_helper_##__project_class() {    \
+    tb::PROJECT_REGISTRY.create(#__project_class);           \
+  }                                                          \
+} __tb_project_create_instance_##__project_class
+
+#define TB_PROJECT_ADD_INSTANCE(                                            \
+  __project_class, __name, __project_instance_class)                        \
+class tb_project_add_instance_helper_##__project_class {                    \
+  struct InstanceBuilder : public tb::ProjectInstanceBuilderBase {          \
+    std::unique_ptr<tb::ProjectInstanceBase> construct() const override {   \
+      return std::unique_ptr<tb::ProjectInstanceBase>(                      \
+        new __project_instance_class());                                    \
+    }                                                                       \
+  };                                                                        \
+public:                                                                     \
+  explicit tb_project_add_instance_helper_##__project_class() {             \
+    auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);                 \
+    p->add_instance_builder(                                                \
+      #__name, std::make_unique<InstanceBuilder>());                        \
+  }                                                                         \
+} __tb_project_add_instance_##__project_class
+
+#define TB_PROJECT_ADD_TEST(__project_class, __project_instance_test)       \
+class tb_project_add_test_helper_##__project_class {                        \
+  struct InstanceBuilder : public tb::ProjectTestBuilderBase {              \
+    std::unique_ptr<tb::ProjectTestBase> construct() const override {       \
+      return std::unique_ptr<tb::ProjectTestBase>(                          \
+        new __project_instance_test());                                     \
+    }                                                                       \
+  };                                                                        \
+public:                                                                     \
+  explicit tb_project_add_test_helper_##__project_class() {                 \
+    auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);                 \
+    p->add_test_builder(                                                    \
+      #__project_instance_test, std::make_unique<InstanceBuilder>());       \
+  }                                                                         \
+} __tb_project_add_test_##__project_class
+
+#define TB_PROJECT_FINALIZE(__project_class)                 \
+class tb_project_finalize_helper_##__project_class {         \
+public:                                                      \
+  explicit tb_project_finalize_helper_##__project_class() {  \
+    auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);  \
+    p->finalize();                                           \
+  }                                                          \
+} __tb_project_finalize_helper_##__project_class
+
+class ProjectInstanceBase {
+ public:
+  explicit ProjectInstanceBase(const std::string& name) : name_(name) {}
+
+  virtual ~ProjectInstanceBase() = default;
+  // Design name
+  virtual const std::string& name() const noexcept { return name_; }
+
+ private:
+  // Design name.
+  std::string name_;
+};
+
+class ProjectInstanceBuilderBase {
+ public:
+  explicit ProjectInstanceBuilderBase() = default;
+  virtual ~ProjectInstanceBuilderBase() = default;
+
+  virtual std::unique_ptr<ProjectInstanceBase> construct() const = 0;
+};
+
+class ProjectTestBase {
+ public:
+  explicit ProjectTestBase(const std::string& name) : name_(name) {}
+
+  virtual ~ProjectTestBase() = default;
+  // Design name
+  virtual const std::string& name() const noexcept { return name_; }
+
+ private:
+  // Design name.
+  std::string name_;
+};
+
+class ProjectTestBuilderBase {
+ public:
+  explicit ProjectTestBuilderBase() = default;
+  virtual ~ProjectTestBuilderBase() = default;
+
+  virtual std::unique_ptr<ProjectTestBase> construct() const = 0;
+};
+
+class ProjectBuilderBase {
+ public:
+  explicit ProjectBuilderBase(const std::string& name) : name_(name) {}
+
+  virtual ~ProjectBuilderBase() = default;
+
+  // Design name
+  virtual const std::string& name() const noexcept { return name_; }
+
+  void add_instance_builder(
+    const std::string& name, std::unique_ptr<ProjectInstanceBuilderBase> builder) {
+    instances_.emplace(name, std::move(builder));
+  }
+
+  void add_test_builder(
+    const std::string& name, std::unique_ptr<ProjectTestBuilderBase> builder) {
+    tests_.emplace(name, std::move(builder));
+  }
+
+  void finalize() {}
+
+  std::unique_ptr<ProjectInstanceBuilderBase> construct_instance(
+    const std::string& instance_name) { return nullptr; }
+  
+  std::unique_ptr<ProjectTestBuilderBase> construct_test(
+    const std::string& test_name, const std::string& test_args) { return nullptr; }
+
+
+ private:
+  // Design name.
+  std::string name_;
+
+  // Associated project instances.
+  std::unordered_map<std::string, std::unique_ptr<ProjectInstanceBuilderBase>> instances_;
+
+  // Associated project tests.
+  std::unordered_map<std::string, std::unique_ptr<ProjectTestBuilderBase>> tests_;
+};
+
+inline class ProjectRegistry {
+ public:
+  explicit ProjectRegistry() = default;
+
+  ProjectBuilderBase* lookup(const std::string& name) { return nullptr; }
+
+
+  void create(const std::string& name);
+
+ private:
+  std::unordered_map<std::string, std::unique_ptr<ProjectBuilderBase>> designs_;
+
+} PROJECT_REGISTRY;
+
+class ProjectInstanceRunner {
+public:
+  explicit ProjectInstanceRunner(ProjectInstanceBase* instance, ProjectTestBase* test)
+    : instance_(instance), test_(test) {};
+  
+    virtual ~ProjectInstanceRunner();
+  
+  virtual void run();
+
+private:
+  ProjectInstanceBase* instance_;
+  ProjectTestBase* test_;
+
+};
 
 inline class Random {
- public:
+public:
   using seed_type = std::mt19937::result_type;
 
   explicit Random(seed_type s = seed_type{}) { seed(s); }
@@ -61,8 +234,10 @@ inline class Random {
     return b(mt_);
   }
 
- private:
+private:
   std::mt19937 mt_;
 } RANDOM;
+
+} // namespace tb
 
 #endif // TB_TB_H

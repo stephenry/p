@@ -117,8 +117,8 @@ class FrameGenerator {
     Random,
   };
 
-  explicit FrameGenerator(std::size_t width, std::size_t height,
-                          Pattern pattern)
+  explicit FrameGenerator(
+    std::size_t width, std::size_t height, Pattern pattern)
       : width_(width), height_(height), pattern_(pattern) {}
 
   Frame<T> generate() {
@@ -173,17 +173,18 @@ class ConvolutionEngine {
     Replicate,
   };
 
-  explicit ConvolutionEngine(
-      const Frame<T>& frame,
-      ExtendStrategy extend_strategy = ExtendStrategy::ZeroPad)
+  explicit ConvolutionEngine(const Frame<T>& frame,
+    ExtendStrategy extend_strategy = ExtendStrategy::ZeroPad)
       : frame_(frame), extend_strategy_(extend_strategy) {}
 
   template <typename FwdIt>
   void generate(FwdIt it) const {
     for (std::ptrdiff_t y = 0;
-         y <= static_cast<std::ptrdiff_t>(frame_.height()); ++y) {
+      y <= static_cast<std::ptrdiff_t>(frame_.height());
+      ++y) {
       for (std::ptrdiff_t x = 0;
-           x <= static_cast<std::ptrdiff_t>(frame_.width()); ++x) {
+        x <= static_cast<std::ptrdiff_t>(frame_.width());
+        ++x) {
         *++it = compute_kernel(y, x);
       }
     }
@@ -195,7 +196,7 @@ class ConvolutionEngine {
     for (std::ptrdiff_t j = 0; j < N; ++j) {
       for (std::ptrdiff_t i = 0; i < N; ++i) {
         kernel.data[j][i] =
-            compute_pixel((y + j - kernel.offset()), (x + i - kernel.offset()));
+          compute_pixel((y + j - kernel.offset()), (x + i - kernel.offset()));
       }
     }
     return kernel;
@@ -320,10 +321,10 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
 
   void on_negedge(tb::ProjectInstanceBase* instance) override {
     ConvTestbenchInterface* intf =
-        dynamic_cast<ConvTestbenchInterface*>(instance);
+      dynamic_cast<ConvTestbenchInterface*>(instance);
     if (!intf) {
       throw std::runtime_error(
-          "ProjectInstanceBase is not of type ConvTestbenchInterface");
+        "ProjectInstanceBase is not of type ConvTestbenchInterface");
     }
     on_negedge_internal(intf);
   }
@@ -474,7 +475,7 @@ class BasicIncrementConvTest final : public ConvTestDriver {
   explicit BasicIncrementConvTest(const std::string& args)
       : ConvTestDriver(args) {
     frame_gen_ = std::make_unique<FrameGenerator<vluint8_t>>(
-        16, 16, FrameGenerator<vluint8_t>::Pattern::Incremental);
+      16, 16, FrameGenerator<vluint8_t>::Pattern::Incremental);
   }
 
   Frame<vluint8_t> next_frame() override { return frame_gen_->generate(); }
@@ -490,8 +491,8 @@ namespace projects::conv {
 void register_project() {
   TB_PROJECT_CREATE(conv);
 
-  TB_PROJECT_ADD_INSTANCE(conv, tb_asic_zeropad,
-                          ConvTestbench<Vtb_asic_zeropad>);
+  TB_PROJECT_ADD_INSTANCE(
+    conv, tb_asic_zeropad, ConvTestbench<Vtb_asic_zeropad>);
 
   TB_PROJECT_ADD_TEST(conv, basic_increment, BasicIncrementConvTest);
 

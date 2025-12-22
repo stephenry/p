@@ -37,7 +37,12 @@
 #include "projects/projects.h"
 #include "tb/tb.h"
 
-#define P_TEST_ASSERT(__cond, __msg)
+#define P_TEST_ASSERT(__cond, __msg) \
+  P_MACRO_BEGIN                      \
+  if (!(__cond)) {                   \
+    throw std::runtime_error(__msg); \
+  }                                  \
+  P_MACRO_END
 
 namespace {
 
@@ -46,14 +51,23 @@ struct Job {
   std::string project_name;
 
   // Specific instance of project to be run.
-  std::string instance_name;
+  std::optional<std::string> instance_name;
 
   // Specific instance of project to be run.
-  std::string test_name;
+  std::optional<std::string> test_name;
 
   // Test to be run on project.
-  std::string test_args;
+  std::optional<std::string> test_args;
+
+  void validate() const;
 };
+
+void Job::validate() const {
+  // Ensure that required fields are present.
+  P_TEST_ASSERT(!project_name.empty(), "Project name is required");
+  P_TEST_ASSERT(instance_name.has_value(), "Instance name is required");
+  P_TEST_ASSERT(test_name.has_value(), "Test name is required");
+}
 
 class Driver {
   explicit Driver(const std::vector<Job>& jobs);
@@ -87,7 +101,7 @@ std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
       current_job.project_name = args[++i];
     } else if (args[i] == "-i" || args[i] == "--instance") {
       // Test name
-      P_TEST_ASSERT(!jobs.empty(), "No prior test defined!");
+      P_TEST_ASSERT(!jobs.empty(), "No prior project defined!");
       P_TEST_ASSERT((i + 1) < args.size(),
                     "Missing argument after -i/--instance");
 
@@ -95,7 +109,7 @@ std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
       current_job.instance_name = args[++i];
     } else if (args[i] == "-t" || args[i] == "--test") {
       // Test name
-      P_TEST_ASSERT(!jobs.empty(), "No prior test defined!");
+      P_TEST_ASSERT(!jobs.empty(), "No prior instance defined!");
       P_TEST_ASSERT((i + 1) < args.size(), "Missing argument after -t/--test");
 
       Job& current_job{jobs.back()};
@@ -126,6 +140,7 @@ std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
 
 int Driver::run() {
   for (const Job& job : jobs_) {
+    job.validate();
     std::cout << "Running project: " << job.project_name << "\n";
     run_job(job);
   }
@@ -141,7 +156,7 @@ void Driver::run_job(const Job& job) {
 
   // Construct instance (of project)
   tb::ProjectInstanceBuilderBase* instance_builder =
-      project_builder->lookup_instance_builder(job.instance_name);
+      project_builder->lookup_instance_builder(*job.instance_name);
 
   // Construct project instance.
   std::unique_ptr<tb::ProjectInstanceBase> instance{
@@ -149,12 +164,11 @@ void Driver::run_job(const Job& job) {
 
   // Construct test (with arguments, if present)
   tb::ProjectTestBuilderBase* test_builder =
-      project_builder->lookup_test_builder(job.test_name);
+      project_builder->lookup_test_builder(*job.test_name);
 
   // Construct project instance test.
   std::unique_ptr<tb::ProjectTestBase> test{
-      test_builder->construct(job.test_args)};
-
+      test_builder->construct(*job.test_args)};
   // Run test on instance.
   std::unique_ptr<tb::ProjectInstanceRunner> runner =
       tb::ProjectInstanceRunner::Build(tb::ProjectInstanceRunner::Type::Default,

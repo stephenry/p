@@ -45,6 +45,11 @@ inline struct Options {
 
 } tb_options;
 
+#define P_MACRO_BEGIN do {
+#define P_MACRO_END \
+  }                 \
+  while (0)
+
 // clang-format off
 #define TB_PROJECT_CREATE(__project_class)                                   \
   class tb_project_create_helper_##__project_class {                         \

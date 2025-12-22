@@ -112,7 +112,7 @@ logic [PIXELS_PER_WORD_N-1:0]               word_admit_dat;
 localparam logic [PIXELS_PER_WORD_N-1:0] WORD_NEXT_INIT = 'b1;
 logic                                       word_next_en;
 `P_DFFRE(logic [PIXELS_PER_WORD_N-1:0], word_next, word_next_en,
-           WORD_NEXT_INIT, arst_n, clk);
+           WORD_NEXT_INIT, clk, arst_n);
 
 // Final composed word for SRAM interface.
 conv_pkg::pixel_t [PIXELS_PER_WORD_N-1:0]  word_din;
@@ -140,7 +140,7 @@ typedef struct packed {
 } pop_pipe_t;
 
 logic                                      pop_pipe_en;
-`P_DFFR(logic, pop_pipe_vld, 1'b0, arst_n, clk);
+`P_DFFR(logic, pop_pipe_vld, 1'b0, clk, arst_n);
 `P_DFFE(pop_pipe_t, pop_pipe, pop_pipe_en, clk);
 
 // ------------------------------------------------------------------------- //
@@ -152,11 +152,11 @@ logic [1:0] dout_bank_mux_sel;
 // SRAM skid buffer
 logic                                      skid_en;
 `P_DFFE(sram_word_t, skid, skid_en, clk);
-`P_DFFR(logic, skid_vld, 'b0, arst_n, clk);
+`P_DFFR(logic, skid_vld, 'b0, clk, arst_n);
 
 logic                                      skid_sel_en;
 `P_DFFRE(logic [PIXELS_PER_WORD_N-1:0], skid_sel, skid_sel_en, 'b1,
-   arst_n, clk);
+   clk, arst_n);
 conv_pkg::pixel_t                          skid_demux;
 
 

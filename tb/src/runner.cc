@@ -25,33 +25,49 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+#include "tb/project.h"
 #include "tb/tb.h"
 
-namespace {
+namespace tb {
 
-class DefaultProjectRunner final : public tb::ProjectInstanceRunner {
+class DefaultProjectRunner final : public ProjectInstanceRunner {
  public:
-  explicit DefaultProjectRunner(tb::ProjectInstanceBase* instance,
-                                tb::ProjectTestBase* test)
-      : tb::ProjectInstanceRunner(instance, test) {}
+  explicit DefaultProjectRunner(ProjectInstanceBase* instance,
+                                ProjectTestBase* test)
+      : ProjectInstanceRunner(instance, test) {}
 
-  void run() override {
-    // Elaborate model.
-    instance_->elaborate();
-
-    // Initialize instance
-    instance_->initialize();
-
-    // [TODO] Run test on instance
-
-    // Finalize instance
-    instance_->finalize();
-  }
+  void run() override;
 };
 
-}  // namespace
+void DefaultProjectRunner::run() {
+  // Elaborate model.
+  instance_->elaborate();
 
-namespace tb {
+  // Initialize instance
+  instance_->initialize();
+
+  // Invoke simulation.
+  switch (instance_->type()) {
+    case tb::ProjectInstanceBase::Type::GenericSynchronous: {
+      // Generic synchronous project instance
+      GenericSynchronousTest* test =
+          dynamic_cast<GenericSynchronousTest*>(test_);
+      if (!test) {
+        // Malformed test case, not of expected type.
+        throw std::runtime_error("Test is not of type GenericSynchronousTest");
+      }
+      instance_->run(test_);
+    } break;
+    case tb::ProjectInstanceBase::Type::Default:
+    default: {
+      // Default project instance
+      instance_->run(test_);
+    } break;
+  }
+
+  // Finalize instance
+  instance_->finalize();
+}
 
 std::unique_ptr<ProjectInstanceRunner> ProjectInstanceRunner::Build(
     Type t, ProjectInstanceBase* instance, ProjectTestBase* test) {

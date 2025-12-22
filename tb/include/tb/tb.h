@@ -95,21 +95,32 @@ inline struct Options {
     }                                                         \
   } __tb_project_finalize_helper_##__project_class
 
+// Forwards:
+class ProjectTestBase;
+
 class ProjectInstanceBase {
  public:
-  explicit ProjectInstanceBase(const std::string& name) : name_(name) {}
+  enum class Type {
+    Default,
+    GenericSynchronous,
+  };
 
+  explicit ProjectInstanceBase(Type t, const std::string& name) : name_(name) {}
   virtual ~ProjectInstanceBase() = default;
+
   // Design name
   virtual const std::string& name() const noexcept { return name_; }
+  Type type() const noexcept { return t_; }
 
   virtual void elaborate() {}
   virtual void initialize() {}
+  virtual void run(ProjectTestBase* test) {}
   virtual void finalize() {}
 
  private:
   // Design name.
   std::string name_;
+  Type t_;
 };
 
 class ProjectInstanceBuilderBase {

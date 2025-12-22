@@ -42,3 +42,5 @@ target_include_directories(tb
     PUBLIC
     ${CMAKE_SOURCE_DIR}/tb/include
 )
+
+target_link_libraries(tb PRIVATE vlib)

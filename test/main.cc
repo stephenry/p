@@ -107,13 +107,16 @@ std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
 
       Job& current_job{jobs.back()};
       current_job.test_args = args[++i];
+    } else if (args[i] == "--enable-waveform-dumping") {
+      tb::tb_options.enable_waveform_dumping = true;
     } else if (args[i] == "--help" || args[i] == "-h") {
       std::cout << "Usage: testbench [options]\n"
                    "Options:\n"
                    "  -p/--project     \n"
                    "  -t/--test        \n"
                    "  -a/--args        \n"
-                   "  --help, -h       Show this help message\n";
+                   "  --enable-waveform-dumping  Enable waveform dumping\n"
+                   "  --help, -h                 Show this help message\n";
       std::exit(EXIT_SUCCESS);
     }
   }

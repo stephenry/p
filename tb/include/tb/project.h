@@ -55,6 +55,7 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
     IN_RESET,
     POST_RESET,
     WIND_DOWN,
+    FINALIZED,
   };
 
   struct {
@@ -80,7 +81,7 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
   UUT* uut() const { return uut_.get(); }
 
  private:
-  bool vcd_en_{false};
+  bool vcd_en_{true};
 
   // Construct VCD trace
   void construct_trace();
@@ -112,19 +113,7 @@ GenericSynchronousProjectInstance<UUT>::GenericSynchronousProjectInstance(
 
 template <typename UUT>
 GenericSynchronousProjectInstance<UUT>::~GenericSynchronousProjectInstance() {
-  // Wind-down simulation and close trace if enabled.
-  if constexpr (UUT::traceCapable) {
-    if (uut_vcd_) {
-      destruct_trace();
-    }
-  }
-
-  // VerilatedContext must be destructed after UUT. If not, the verilated
-  // instance crashes specularly during destruction. This could have
-  // been enforced by declaring these instances in reverse order, but this is
-  // more explicit.
-  uut_.reset();
-  uut_ctxt_.reset();
+  // Check proper finalization.
 }
 
 template <typename UUT>
@@ -236,7 +225,27 @@ void GenericSynchronousProjectInstance<UUT>::step_cycles_n(
 }
 
 template <typename UUT>
-void GenericSynchronousProjectInstance<UUT>::finalize() {}
+void GenericSynchronousProjectInstance<UUT>::finalize() {
+  // Call UUT finalization blocks.
+  uut_->final();
+
+  // Wind-down simulation and close trace if enabled.
+  if constexpr (UUT::traceCapable) {
+    if (uut_vcd_) {
+      destruct_trace();
+    }
+  }
+
+  // VerilatedContext must be destructed after UUT. If not, the verilated
+  // instance crashes specularly during destruction. This could have
+  // been enforced by declaring these instances in reverse order, but this is
+  // more explicit.
+  uut_.reset();
+  uut_ctxt_.reset();
+
+  // Advance state to finalized.
+  state_ = State::FINALIZED;
+}
 
 }  // namespace tb
 

@@ -7,6 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/test/driver",
             "args": [
+                "--enable-waveform-dumping",
                 "--project",
                 "conv",
                 "--instance",

@@ -149,6 +149,9 @@ class ProjectTestBase {
   // Design name
   virtual const std::string& args() const noexcept { return args_; }
 
+  virtual void init() {}
+  virtual void fini() {}
+
  private:
   // Test arguments.
   std::string args_;

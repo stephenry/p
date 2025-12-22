@@ -147,7 +147,7 @@ assign cntrl_stall = (~s_tvalid_i | ~m_tready_i);
 
 // Similarly, datapath as no capability to absorb back-pressure. So
 // it is simply reflected upstream.
-assign s_tready_o = ~m_tready_i;
+assign s_tready_o = m_tready_i;
 
 // ------------------------------------------------------------------------- //
 // Column position determination.

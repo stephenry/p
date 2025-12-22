@@ -66,6 +66,7 @@ struct SlaveInterfaceIn {
 };
 
 struct SlaveInterfaceOut {
+  bool tvalid;
   bool tready;
 };
 
@@ -138,10 +139,11 @@ class FrameGenerator {
  private:
   // Generate frame with incremental pixel values.
   Frame<T> generate_incremental() {
+    T pixel{};
     Frame<T> frame(width_, height_);
     for (std::size_t y = 0; y < height_; ++y) {
       for (std::size_t x = 0; x < width_; ++x) {
-        frame.set_pixel(x, y, static_cast<T>(y * width_ + x));
+        frame.set_pixel(x, y, pixel++);
       }
     }
     return frame;
@@ -304,6 +306,15 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
 
   virtual ~ConvTestDriver() = default;
 
+  void init() override {
+    frame_ = next_frame();
+    frame_tx_.init(std::addressof(*frame_));
+  }
+
+  void fini() override {
+    // Finalization code here.
+  }
+
   // Override to provide next frame to be processed.
   virtual Frame<vluint8_t> next_frame() = 0;
 
@@ -327,6 +338,12 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
   }
 
   void on_negedge_internal_in(ConvTestbenchInterface* intf) {
+    // Consume pixel if accepted
+    const SlaveInterfaceOut s_in{intf->s_out()};
+    if (s_in.tvalid && s_in.tready) {
+      frame_tx_.advance();
+    }
+
     if (frame_tx_.frame_exhausted()) {
       // Obtain next frame from child.
       frame_ = next_frame();
@@ -337,14 +354,7 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
       ceng.generate(std::back_inserter(expected_));
     }
 
-    // Drive next pixel into interface
     intf->s_in(frame_tx_.next());
-
-    // Consume pixel if accepted
-    const SlaveInterfaceOut s_in{intf->s_out()};
-    if (s_in.tready) {
-      frame_tx_.advance();
-    }
   }
 
   void on_negedge_internal_out(ConvTestbenchInterface* intf) {
@@ -384,6 +394,7 @@ class ConvTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
 
   SlaveInterfaceOut s_out() const noexcept override {
     SlaveInterfaceOut out{};
+    out.tvalid = tb::vsupport::from_v<bool>(uut()->s_tvalid_i);
     out.tready = tb::vsupport::from_v<bool>(uut()->s_tready_o);
     return out;
   }

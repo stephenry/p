@@ -37,6 +37,9 @@ class DefaultProjectRunner final : public ProjectInstanceRunner {
       : ProjectInstanceRunner(instance, test) {}
 
   void run() override;
+
+ private:
+  void execute();
 };
 
 void DefaultProjectRunner::run() {
@@ -45,6 +48,17 @@ void DefaultProjectRunner::run() {
 
   // Initialize instance
   instance_->initialize();
+
+  // Run simulation
+  execute();
+
+  // Finalize instance
+  instance_->finalize();
+}
+
+void DefaultProjectRunner::execute() {
+  // Initialize test.
+  test_->init();
 
   // Invoke simulation.
   switch (instance_->type()) {
@@ -56,6 +70,7 @@ void DefaultProjectRunner::run() {
         // Malformed test case, not of expected type.
         throw std::runtime_error("Test is not of type GenericSynchronousTest");
       }
+
       instance_->run(test_);
     } break;
     case tb::ProjectInstanceBase::Type::Default:
@@ -65,8 +80,8 @@ void DefaultProjectRunner::run() {
     } break;
   }
 
-  // Finalize instance
-  instance_->finalize();
+  // Run finalization of test.
+  test_->fini();
 }
 
 std::unique_ptr<ProjectInstanceRunner> ProjectInstanceRunner::Build(

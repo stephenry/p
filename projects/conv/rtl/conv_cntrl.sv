@@ -360,24 +360,24 @@ endgenerate
 
 always_comb begin: lb_rotator_PROC
 
-  case (5'b0000) inside
-    5'b00001: kernel_colD_data = {
+  case (1'b1) inside
+    bank_pop_sel_r[0]: kernel_colD_data = {
         lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2]
       };
 
-    5'b00010: kernel_colD_data = {
+    bank_pop_sel_r[1]: kernel_colD_data = {
         lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3]
       };
 
-    5'b00100: kernel_colD_data = {
+    bank_pop_sel_r[2]: kernel_colD_data = {
         lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4]
       };
     
-    5'b01000: kernel_colD_data = {
+    bank_pop_sel_r[3]: kernel_colD_data = {
         lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0]
       };
     
-    5'b10000: kernel_colD_data = {
+    bank_pop_sel_r[4]: kernel_colD_data = {
         lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1]
       };
 
@@ -423,7 +423,7 @@ dp #(
 
 // ========================================================================= //
 //                                                                           //
-// Ouputs                                                                    //
+// Outputs                                                                   //
 //                                                                           //
 // ========================================================================= //
 

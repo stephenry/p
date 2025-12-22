@@ -20,7 +20,7 @@ This project provides a CMake-based build system for developing and testing hard
 - **Verilator**: Hardware simulation tool
   - Set `VERILATOR_ROOT` environment variable to your Verilator installation
 - **Python 3**: For RTL compilation scripts
-- **C++ Compiler**: Supporting C++20 standard
+- **C++ Compiler**: Supporting C++20 standard (GCC >= 10, Clang >= 10, or MSVC >= 19.29)
 - **PyYAML**: Python package (automatically installed in virtual environment)
 
 ### Environment Setup

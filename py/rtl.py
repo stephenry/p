@@ -60,8 +60,8 @@ class Verilator:
         with open(vc_f, 'w') as f:
             self._render_command_file(f)
 
-        self._invoke_verilation(of=vc_f)
-        self._touch_timestamp(vc_f_timestamp)
+        if self._invoke_verilation(of=vc_f):
+            self._touch_timestamp(vc_f_timestamp)
 
     def _render_command_file(self, f) -> None:
         print(f"Rendering Verilator command file to {f.name}...")
@@ -107,7 +107,9 @@ class Verilator:
         from cfg import VERILATOR_EXE
 
         print("Invoking Verilator...")
-        subprocess.run([VERILATOR_EXE, "-f", of])
+        cp = subprocess.run([VERILATOR_EXE, "-f", of])
+        return cp.returncode == 0
+
 
     def _touch_timestamp(self, f: str) -> None:
         with open(f, 'w') as tf:

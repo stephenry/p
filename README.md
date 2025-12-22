@@ -25,6 +25,17 @@ This project provides a CMake-based build system for developing and testing hard
 
 ### Environment Setup
 
+**Option 1: Using Dev Container (Recommended)**
+
+This project includes a VS Code dev container configuration with all dependencies pre-installed:
+
+1. Open the project in VS Code
+2. Install the "Dev Containers" extension
+3. Click "Reopen in Container" when prompted
+4. The container includes Verilator, CMake, Python 3, and all required tools
+
+**Option 2: Manual Setup**
+
 Export the Verilator installation path:
 
 ```bash

@@ -42,4 +42,7 @@ T from_v(vluint8_t v) {
 
 }  // namespace tb::vsupport
 
+// DPI support functions
+extern "C" int tb_error(const char* filename, int lineno, const char* msg);
+
 #endif  // TB_TB_VSUPPORT_H

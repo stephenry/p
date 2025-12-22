@@ -31,11 +31,34 @@
 `ifdef TB_PKG_UNDEF
 
 `undef TB_STRINGIFY
+`undef TB_STATIC_ASSERT
+`undef TB_ERROR
 
 `else
 
 `define TB_STRINGIFY(__x) `"__x`"
 
+// TB parameterization support macros. Ought to be deconfigured from synthesis
+// builds.
+`define TB_STATIC_ASSERT(__cond, __msg) \
+    initial begin \
+        if (!(__cond)) begin \
+            tb_pkg::tb_error(`__FILE__, `__LINE__, __msg); \
+        end \
+    end
+
+`define TB_ERROR(__msg) \
+    initial begin \
+        tb_pkg::tb_error(`__FILE__, `__LINE__, __msg); \
+    end
+
 `endif
+
+package tb_pkg;
+
+import "DPI-C" task tb_error(
+    input string filename, input int lineno, input string msg);
+
+endpackage: tb_pkg;
 
 `endif

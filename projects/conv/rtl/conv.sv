@@ -29,6 +29,7 @@
 `include "flops.svh"
 `include "conv_pkg.svh"
 `include "cfg_pkg.svh"
+`include "tb_pkg.svh"
 
 // Generic model to perform a convolution operation on streaming data.
 
@@ -167,7 +168,7 @@ end : replicate_GEN
 
 default: begin: default_GEN
 
-// TODO(stephenry): static assertion to go here.
+`TB_ERROR("Unsupported extension strategy in conv.sv");
 
 end : default_GEN
 

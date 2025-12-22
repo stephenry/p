@@ -32,3 +32,8 @@ namespace tb::vsupport {
 vluint8_t to_v(bool b) { return b ? 1 : 0; }
 
 }  // namespace tb::vsupport
+
+// DPI support functions
+extern "C" int tb_error(const char* filename, int lineno, const char* msg) {
+  return 0;
+}

@@ -29,6 +29,7 @@
 `include "conv_pkg.svh"
 `include "flops.svh"
 `include "cfg_pkg.svh"
+`include "tb_pkg.svh"
 
 module conv_cntrl (
 
@@ -346,7 +347,7 @@ end: conv_cntrl_lb_asic_GEN
 
 default: begin : conv_cntrl_lb_default_GEN
 
-// TODO(stephenry): some static assertion here.
+`TB_ERROR("Unsupported TARGET in conv_cntrl.sv");
 
 end : conv_cntrl_lb_default_GEN
 

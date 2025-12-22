@@ -36,4 +36,7 @@ set_target_properties(driver PROPERTIES
   CXX_EXTENSIONS NO
 )
 
-target_link_libraries(driver tb ${P_PROJECT_LIBS})
+target_link_libraries(driver tb projects)
+target_include_directories(driver PRIVATE
+  ${CMAKE_SOURCE_DIR}/projects/include
+)

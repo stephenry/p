@@ -25,21 +25,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef TB_TB_VSUPPORT_H
-#define TB_TB_VSUPPORT_H
+#include "conv/tb.h"
 
-#include "verilated.h"
-#include "verilated_vcd_c.h"
+namespace projects {
 
-namespace tb::vsupport {
-
-vluint8_t to_v(bool b);
-
-template <typename T>
-T from_v(vluint8_t v) {
-  return (v != 0);
+void register_projects() {
+  // TODO
+  projects::conv::register_project();
 }
 
-}  // namespace tb::vsupport
-
-#endif  // TB_TB_VSUPPORT_H
+}  // namespace projects

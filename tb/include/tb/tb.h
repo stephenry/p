@@ -41,16 +41,21 @@ namespace tb {
 
 // Global testbench options
 inline struct Options {
+  bool enable_waveform_dumping{false};
+
 } tb_options;
 
-#define TB_PROJECT_CREATE(__project_class)                  \
-  class tb_project_create_helper_##__project_class {        \
-   public:                                                  \
-    explicit tb_project_create_helper_##__project_class() { \
-      tb::PROJECT_REGISTRY.create(#__project_class);        \
-    }                                                       \
-  } __tb_project_create_instance_##__project_class
+// clang-format off
+#define TB_PROJECT_CREATE(__project_class)                                   \
+  class tb_project_create_helper_##__project_class {                         \
+   public:                                                                   \
+    explicit tb_project_create_helper_##__project_class() {                  \
+      tb::PROJECT_REGISTRY.create(#__project_class);                         \
+    }                                                                        \
+  } __tb_project_create_instance_##__project_class {}
+// clang-format on
 
+// clang-format off
 #define TB_PROJECT_ADD_INSTANCE(__project_class, __name,                     \
                                 __project_instance_class)                    \
   class tb_project_add_instance_helper_##__project_class {                   \
@@ -60,40 +65,44 @@ inline struct Options {
             new __project_instance_class());                                 \
       }                                                                      \
     };                                                                       \
-                                                                             \
    public:                                                                   \
     explicit tb_project_add_instance_helper_##__project_class() {            \
       auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);                \
       p->add_instance_builder(#__name, std::make_unique<InstanceBuilder>()); \
     }                                                                        \
-  } __tb_project_add_instance_##__project_class
+  } __tb_project_add_instance_##__project_class {}
+// clang-format on
 
-#define TB_PROJECT_ADD_TEST(__project_class, __project_instance_test) \
-  class tb_project_add_test_helper_##__project_class {                \
-    struct InstanceBuilder : public tb::ProjectTestBuilderBase {      \
-      std::unique_ptr<tb::ProjectTestBase> construct(                 \
-          const std::string& args) const override {                   \
-        return std::unique_ptr<tb::ProjectTestBase>(                  \
-            new __project_instance_test(args));                       \
-      }                                                               \
-    };                                                                \
-                                                                      \
-   public:                                                            \
-    explicit tb_project_add_test_helper_##__project_class() {         \
-      auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);         \
-      p->add_test_builder(#__project_instance_test,                   \
-                          std::make_unique<InstanceBuilder>());       \
-    }                                                                 \
-  } __tb_project_add_test_##__project_class
+// clang-format off
+#define TB_PROJECT_ADD_TEST(__project_class, __name,                         \
+     __project_instance_test)                                                \
+  class tb_project_add_test_helper_##__project_class {                       \
+    struct InstanceBuilder : public tb::ProjectTestBuilderBase {             \
+      std::unique_ptr<tb::ProjectTestBase> construct(                        \
+          const std::string& args) const override {                          \
+        return std::unique_ptr<tb::ProjectTestBase>(                         \
+            new __project_instance_test(args));                              \
+      }                                                                      \
+    };                                                                       \
+   public:                                                                   \
+    explicit tb_project_add_test_helper_##__project_class() {                \
+      auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);                \
+      p->add_test_builder(#__name,                                           \
+                          std::make_unique<InstanceBuilder>());              \
+    }                                                                        \
+  } __tb_project_add_test_##__project_class {}
+// clang-format on
 
-#define TB_PROJECT_FINALIZE(__project_class)                  \
-  class tb_project_finalize_helper_##__project_class {        \
-   public:                                                    \
-    explicit tb_project_finalize_helper_##__project_class() { \
-      auto p = tb::PROJECT_REGISTRY.lookup(#__project_class); \
-      p->finalize();                                          \
-    }                                                         \
-  } __tb_project_finalize_helper_##__project_class
+// clang-format off
+#define TB_PROJECT_FINALIZE(__project_class)                                 \
+  class tb_project_finalize_helper_##__project_class {                       \
+   public:                                                                   \
+    explicit tb_project_finalize_helper_##__project_class() {                \
+      auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);                \
+      p->finalize();                                                         \
+    }                                                                        \
+  } __tb_project_finalize_helper_##__project_class {}
+// clang-format on
 
 // Forwards:
 class ProjectTestBase;
@@ -176,15 +185,10 @@ class ProjectBuilderBase {
 
   void finalize() {}
 
-  std::unique_ptr<ProjectInstanceBuilderBase> construct_instance(
-      const std::string& instance_name) {
-    return nullptr;
-  }
+  ProjectInstanceBuilderBase* lookup_instance_builder(
+      const std::string& instance_name);
 
-  std::unique_ptr<ProjectTestBuilderBase> construct_test(
-      const std::string& test_name) {
-    return nullptr;
-  }
+  ProjectTestBuilderBase* lookup_test_builder(const std::string& test_name);
 
  private:
   // Design name.
@@ -203,7 +207,7 @@ inline class ProjectRegistry {
  public:
   explicit ProjectRegistry() = default;
 
-  ProjectBuilderBase* lookup(const std::string& name) { return nullptr; }
+  ProjectBuilderBase* lookup(const std::string& name);
 
   void create(const std::string& name);
 

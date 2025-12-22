@@ -25,21 +25,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef TB_TB_VSUPPORT_H
-#define TB_TB_VSUPPORT_H
-
-#include "verilated.h"
-#include "verilated_vcd_c.h"
+#include "tb/vsupport.h"
 
 namespace tb::vsupport {
 
-vluint8_t to_v(bool b);
-
-template <typename T>
-T from_v(vluint8_t v) {
-  return (v != 0);
-}
+vluint8_t to_v(bool b) { return b ? 1 : 0; }
 
 }  // namespace tb::vsupport
-
-#endif  // TB_TB_VSUPPORT_H

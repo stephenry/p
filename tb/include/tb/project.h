@@ -50,19 +50,22 @@ class GenericSynchronousTest : public ProjectTestBase {
 template <typename UUT>
 class GenericSynchronousProjectInstance : public ProjectInstanceBase {
  protected:
+  enum class State {
+    ELABORATION,
+    IN_RESET,
+    POST_RESET,
+    WIND_DOWN,
+  };
+
   struct {
     bool reset_async = true;
 
     bool reset_active_high = false;
-
   } opts;
 
  public:
-  explicit GenericSynchronousProjectInstance(const std::string& name)
-      : ProjectInstanceBase(ProjectInstanceBase::Type::GenericSynchronous,
-                            name) {}
-
-  virtual ~GenericSynchronousProjectInstance() = default;
+  explicit GenericSynchronousProjectInstance(const std::string& name);
+  virtual ~GenericSynchronousProjectInstance();
 
   virtual void elaborate();
   virtual void initialize();
@@ -77,6 +80,15 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
   UUT* uut() const { return uut_.get(); }
 
  private:
+  bool vcd_en_{false};
+
+  // Construct VCD trace
+  void construct_trace();
+
+  void destruct_trace();
+
+  void evaluate_timestep();
+
   // Perform reset sequence
   void perform_reset_sequence();
 
@@ -84,12 +96,80 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
   void step_cycles_n(std::size_t cycles_n = 1, std::size_t ticks_n = 10);
 
   std::unique_ptr<UUT> uut_;
+  std::unique_ptr<VerilatedContext> uut_ctxt_;
+  std::unique_ptr<VerilatedVcdC> uut_vcd_;
 
   GenericSynchronousTest* test_{nullptr};
+
+  State state_;
 };
 
 template <typename UUT>
-void GenericSynchronousProjectInstance<UUT>::elaborate() {}
+GenericSynchronousProjectInstance<UUT>::GenericSynchronousProjectInstance(
+    const std::string& name)
+    : ProjectInstanceBase(ProjectInstanceBase::Type::GenericSynchronous, name) {
+}
+
+template <typename UUT>
+GenericSynchronousProjectInstance<UUT>::~GenericSynchronousProjectInstance() {
+  // Wind-down simulation and close trace if enabled.
+  if constexpr (UUT::traceCapable) {
+    if (uut_vcd_) {
+      destruct_trace();
+    }
+  }
+
+  // VerilatedContext must be destructed after UUT. If not, the verilated
+  // instance crashes specularly during destruction. This could have
+  // been enforced by declaring these instances in reverse order, but this is
+  // more explicit.
+  uut_.reset();
+  uut_ctxt_.reset();
+}
+
+template <typename UUT>
+void GenericSynchronousProjectInstance<UUT>::elaborate() {
+  state_ = State::ELABORATION;
+  uut_ctxt_ = std::make_unique<VerilatedContext>();
+  if constexpr (UUT::traceCapable) {
+    uut_ctxt_->traceEverOn(true);
+  }
+  uut_ = std::make_unique<UUT>(uut_ctxt_.get(), "uut");
+  if constexpr (UUT::traceCapable) {
+    if (tb_options.enable_waveform_dumping && vcd_en_) {
+      construct_trace();
+    }
+  }
+}
+
+template <typename UUT>
+void GenericSynchronousProjectInstance<UUT>::evaluate_timestep() {
+  uut_ctxt_->timeInc(1);
+  uut_->eval();
+  if constexpr (UUT::traceCapable) {
+    if (tb_options.enable_waveform_dumping && vcd_en_) {
+      uut_vcd_->dump(uut_ctxt_->time());
+    }
+  }
+}
+
+template <typename UUT>
+void GenericSynchronousProjectInstance<UUT>::construct_trace() {
+  uut_vcd_ = std::make_unique<VerilatedVcdC>();
+  uut_->trace(uut_vcd_.get(), 99);
+  uut_vcd_->open("uut_trace.vcd");
+}
+
+template <typename UUT>
+void GenericSynchronousProjectInstance<UUT>::destruct_trace() {
+  // Allow some window period.
+
+  step_cycles_n(5);
+
+  state_ = State::WIND_DOWN;
+  uut_vcd_->close();
+  uut_vcd_.reset();
+}
 
 template <typename UUT>
 void GenericSynchronousProjectInstance<UUT>::initialize() {
@@ -101,16 +181,18 @@ void GenericSynchronousProjectInstance<UUT>::initialize() {
 
 template <typename UUT>
 void GenericSynchronousProjectInstance<UUT>::run(ProjectTestBase* test) {
-  GenericSynchronousTest* sync_test =
-      dynamic_cast<GenericSynchronousTest*>(test);
-  if (!sync_test) {
+  test_ = dynamic_cast<GenericSynchronousTest*>(test);
+  if (!test_) {
     // Malformed test case, not of expected type.
     throw std::runtime_error("Test is not of type GenericSynchronousTest");
   }
 
+  // Perform initialization.
+  state_ = State::IN_RESET;
   perform_reset_sequence();
 
   // Run main test
+  state_ = State::POST_RESET;
   step_cycles_n(1000);
 }
 
@@ -138,14 +220,14 @@ void GenericSynchronousProjectInstance<UUT>::step_cycles_n(
     // Rising edge
     set_clk(true);
     for (std::size_t i = 0; i < half_ticks_n; ++i) {
-      uut_->eval();
+      evaluate_timestep();
     }
 
     // Falling edge
     set_clk(false);
     for (std::size_t i = 0; i < half_ticks_n; ++i) {
-      uut_->eval();
-      if (i == 0) {
+      evaluate_timestep();
+      if (i == 0 && (state_ == State::POST_RESET)) {
         // Invoke on_negedge callback
         test_->on_negedge(this);
       }

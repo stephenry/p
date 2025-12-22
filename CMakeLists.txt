@@ -40,8 +40,7 @@ add_subdirectory(py)
 # Testbench (and associated verification collatoral) library
 add_subdirectory(tb)
 
-# Problems
-set(P_PROJECT_LIBS "")
+# Projects
 add_subdirectory(projects)
 
 # Test driver

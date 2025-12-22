@@ -43,7 +43,9 @@ macro (generate_project)
       CXX_EXTENSIONS NO
     )
     # Append to global project list
-    list(APPEND P_PROJECT_LIBS ${arg_NAME})
+    message(STATUS "Adding project library: ${arg_NAME}")
+    list(APPEND P_PROJECT_LIBS "${arg_NAME}")
+    message(STATUS "Current project libs: ${P_PROJECT_LIBS}")
 
     set (v_libraries "")
     foreach (YAML_IN ${arg_YAML_IN})
@@ -95,8 +97,28 @@ macro (generate_project)
     endforeach ()
 
     target_link_libraries(${arg_NAME} tb vlib ${v_libraries})
+    message(STATUS "Project ${arg_NAME} linked to verilated libraries: ${v_libraries}")
 
 endmacro ()
 
+set(P_PROJECT_LIBS "")
+
 add_subdirectory(common)
 add_subdirectory(conv)
+
+set(PROJECT_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/projects.cc
+)
+
+add_library(projects STATIC ${PROJECT_SRCS})
+message(STATUS "Project libraries: ${P_PROJECT_LIBS}")
+target_link_libraries(projects ${P_PROJECT_LIBS} conv)
+target_include_directories(projects
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_target_properties(projects PROPERTIES
+  CXX_STANDARD 20
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
+)

@@ -36,6 +36,9 @@
 #include "tb/project.h"
 #include "tb/vsupport.h"
 
+// instances
+#include "v/Vtb_asic_zeropad.h"
+
 namespace {
 
 // Forwards:
@@ -327,6 +330,7 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
     if (frame_tx_.frame_exhausted()) {
       // Obtain next frame from child.
       frame_ = next_frame();
+      frame_tx_.init(std::addressof(*frame_));
 
       // Compute expected convolutions.
       ConvolutionEngine<vluint8_t, 5> ceng{*frame_};
@@ -337,7 +341,7 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
     intf->s_in(frame_tx_.next());
 
     // Consume pixel if accepted
-    const SlaveInterfaceOut s_in{intf->s_out};
+    const SlaveInterfaceOut s_in{intf->s_out()};
     if (s_in.tready) {
       frame_tx_.advance();
     }
@@ -350,12 +354,12 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
 
     const MasterInterfaceOut<vluint8_t, 5> m_out{intf->m_out()};
     if (m_out.m_tvalid && apply_backpressure) {
-      return
+      return;
     }
 
     // Otherwise, consume and validate output kernel.
-    const Kernel<vluint8_t, 5> expected_kernel{expected_.front()};
-    expected_.pop_front();
+    // const Kernel<vluint8_t, 5> expected_kernel{expected_.front()};
+    // expected_.pop_front();
 
     // TODO: comparison code.
   }
@@ -432,7 +436,7 @@ class ConvTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
   void set_rst(bool v) override { uut()->arst_n = tb::vsupport::to_v(v); }
 
  private:
-  UUT* uut() const { return this->uut(); }
+  UUT* uut() const { return base_type::uut(); }
 };
 
 template <VConvModule UUT>
@@ -470,12 +474,17 @@ class BasicIncrementConvTest final : public ConvTestDriver {
 
 }  // namespace
 
-TB_PROJECT_CREATE(conv);
+namespace projects::conv {
 
-#include "v/Vtb_asic_zeropad.h"
-TB_PROJECT_ADD_INSTANCE(conv, "tb_asic_zeropad",
-                        ConvTestbench<Vtb_asic_zeropad>);
+void register_project() {
+  TB_PROJECT_CREATE(conv);
 
-TB_PROJECT_ADD_TEST(conv, BasicIncrementConvTest);
+  TB_PROJECT_ADD_INSTANCE(conv, tb_asic_zeropad,
+                          ConvTestbench<Vtb_asic_zeropad>);
 
-TB_PROJECT_FINALIZE(conv);
+  TB_PROJECT_ADD_TEST(conv, basic_increment, BasicIncrementConvTest);
+
+  TB_PROJECT_FINALIZE(conv);
+}
+
+}  // namespace projects::conv

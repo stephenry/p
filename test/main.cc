@@ -34,6 +34,7 @@
 #include <tuple>
 #include <vector>
 
+#include "projects/projects.h"
 #include "tb/tb.h"
 
 #define P_TEST_ASSERT(__cond, __msg)
@@ -68,7 +69,9 @@ class Driver {
   std::vector<Job> jobs_;
 };
 
-Driver::Driver(const std::vector<Job>& jobs) : jobs_(jobs) {}
+Driver::Driver(const std::vector<Job>& jobs) : jobs_(jobs) {
+  projects::register_projects();
+}
 
 std::unique_ptr<Driver> Driver::from_args(int argc, char** argv) {
   // Parse command line arguments to populate options.
@@ -134,16 +137,16 @@ void Driver::run_job(const Job& job) {
       tb::PROJECT_REGISTRY.lookup(job.project_name)};
 
   // Construct instance (of project)
-  std::unique_ptr<tb::ProjectInstanceBuilderBase> instance_builder =
-      project_builder->construct_instance(job.instance_name);
+  tb::ProjectInstanceBuilderBase* instance_builder =
+      project_builder->lookup_instance_builder(job.instance_name);
 
   // Construct project instance.
   std::unique_ptr<tb::ProjectInstanceBase> instance{
       instance_builder->construct()};
 
   // Construct test (with arguments, if present)
-  std::unique_ptr<tb::ProjectTestBuilderBase> test_builder =
-      project_builder->construct_test(job.test_name);
+  tb::ProjectTestBuilderBase* test_builder =
+      project_builder->lookup_test_builder(job.test_name);
 
   // Construct project instance test.
   std::unique_ptr<tb::ProjectTestBase> test{

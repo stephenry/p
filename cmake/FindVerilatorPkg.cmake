@@ -55,7 +55,9 @@ if (EXISTS $ENV{VERILATOR_ROOT})
   target_include_directories(vlib PUBLIC
     "${VERILATOR_ROOT}/include"
     "${VERILATOR_ROOT}/include/vltstd")
+  target_link_libraries(vlib PUBLIC atomic)
   set_target_properties(vlib PROPERTIES CXX_STANDARD 14)
+
 
 else ()
   # Configuration script expects and requires that the VERILATOR_ROOT

@@ -28,6 +28,7 @@
 set(TB_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/project.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/runner.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/vsupport.cc
 )
 
 add_library(tb STATIC ${TB_SRCS})

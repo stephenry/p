@@ -27,8 +27,39 @@
 
 #include "tb/tb.h"
 
-
 namespace tb {
 
+ProjectBuilderBase* ProjectRegistry::lookup(const std::string& name) {
+  if (auto it = designs_.find(name); it != designs_.end()) {
+    return it->second.get();
+  }
 
-} // namespace tb
+  // Otherwise, project was not found.
+  return nullptr;
+}
+
+void ProjectRegistry::create(const std::string& name) {
+  designs_.emplace(name, std::make_unique<ProjectBuilderBase>(name));
+}
+
+ProjectInstanceBuilderBase* ProjectBuilderBase::lookup_instance_builder(
+    const std::string& instance_name) {
+  // Lookup instance builder for instance_name.
+  if (auto it = instances_.find(instance_name); it != instances_.end()) {
+    return it->second.get();
+  }
+  // Otherwise, instance was not found.
+  return nullptr;
+}
+
+ProjectTestBuilderBase* ProjectBuilderBase::lookup_test_builder(
+    const std::string& test_name) {
+  // Lookup test builder for test_name.
+  if (auto it = tests_.find(test_name); it != tests_.end()) {
+    return it->second.get();
+  }
+  // Otherwise, test was not found.
+  return nullptr;
+}
+
+}  // namespace tb

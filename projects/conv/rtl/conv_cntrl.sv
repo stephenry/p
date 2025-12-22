@@ -47,7 +47,6 @@ module conv_cntrl (
 , output wire logic                         s_tready_o
 
 , input wire logic                          m_tready_i
-, input wire logic                          m_tvalid_o
 
 , output wire logic [4:0]                   kernel_colD_push_o
 , output conv_pkg::kernel_pos_t             kernel_colD_pos_o

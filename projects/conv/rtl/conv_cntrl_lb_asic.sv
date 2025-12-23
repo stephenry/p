@@ -41,7 +41,7 @@ module conv_cntrl_lb_asic (
   input wire logic                          push_i
 , input wire logic                          pop_i
 , input wire conv_pkg::pixel_t              dat_i
-, input wire logic                          sof_i
+, input wire logic                          sol_i
 , input wire logic                          eol_i
 
 // -------------------------------------------------------------------------- //
@@ -84,20 +84,14 @@ localparam int SRAM_WORDS_N =
   common_pkg::ceil(conv_pkg::IMAGE_MAX_W, PIXELS_PER_WORD_N);
 
 // ------------------------------------------------------------------------- //
-// Stall logic.
-logic                                       stall;
-logic                                       stall_pop;
-
-// ------------------------------------------------------------------------- //
 // Address calculations
 
 localparam ADDR_W = $clog2(SRAM_WORDS_N);
 typedef logic [ADDR_W-1:0] addr_t;
 
+logic                                       addr_clr;
 logic                                       addr_en;
 `P_DFFE(addr_t, addr, addr_en, clk);
-logic [1:0]                                 wen;
-logic [1:0]                                 ren;
 
 // ------------------------------------------------------------------------- //
 // Push Path
@@ -109,10 +103,9 @@ logic [PIXELS_PER_WORD_N-2:0]               word_vld_w;
 logic [PIXELS_PER_WORD_N-2:0]               word_vld_r;
 logic [PIXELS_PER_WORD_N-1:0]               word_admit_dat;
 
-localparam logic [PIXELS_PER_WORD_N-1:0] WORD_NEXT_INIT = 'b1;
 logic                                       word_next_en;
-`P_DFFRE(logic [PIXELS_PER_WORD_N-1:0], word_next, word_next_en,
-           WORD_NEXT_INIT, clk, arst_n);
+`P_DFFE(logic [PIXELS_PER_WORD_N-1:0], word_next, word_next_en, clk);
+logic [PIXELS_PER_WORD_N-1:0]               word_next;
 
 // Final composed word for SRAM interface.
 conv_pkg::pixel_t [PIXELS_PER_WORD_N-1:0]  word_din;
@@ -120,33 +113,24 @@ logic                                      advance_push;
 
 // ------------------------------------------------------------------------- //
 // Pop Path
+logic                                      advance_pop_pre;
 logic                                      advance_pop;
 
 // ------------------------------------------------------------------------- //
 // SRAM bank selection
 
-logic [1:0]                                ce;
-logic [1:0]                                rnw;
-sram_word_t [1:0]                          dout;
+logic                                      ce;
+logic                                      rnw;
+sram_word_t                                dout;
 
 // ------------------------------------------------------------------------- //
 // SRAM pipelining
-
 typedef struct packed {
-  // Pop bank select
-  logic bnk;
-
-  logic dout_vld;
+  logic       dout_vld;
+  logic       pop;
 } pop_pipe_t;
 
-logic                                      pop_pipe_en;
-`P_DFFR(logic, pop_pipe_vld, 1'b0, clk, arst_n);
-`P_DFFE(pop_pipe_t, pop_pipe, pop_pipe_en, clk);
-
-// ------------------------------------------------------------------------- //
-// SRAM bank mux.
-
-logic [1:0] dout_bank_mux_sel;
+`P_DFFR(pop_pipe_t, pop_pipe, 2'b00, clk, arst_n);
 
 // ------------------------------------------------------------------------- //
 // SRAM skid buffer
@@ -155,20 +139,11 @@ logic                                      skid_en;
 `P_DFFR(logic, skid_vld, 'b0, clk, arst_n);
 
 logic                                      skid_sel_en;
-`P_DFFRE(logic [PIXELS_PER_WORD_N-1:0], skid_sel, skid_sel_en, 'b1,
-   clk, arst_n);
+`P_DFFE(logic [PIXELS_PER_WORD_N-1:0], skid_sel, skid_sel_en, clk);
 conv_pkg::pixel_t                          skid_demux;
-
-
-// ------------------------------------------------------------------------- //
-// SRAM bank selection
-sram_word_t                                dout_demux;
-
-conv_pkg::pixel_t                          dout_demux_skid;
 logic                                      skid_demux_bypass;
 logic                                      colD_en;
 `P_DFFE(conv_pkg::pixel_t, colD, colD_en, clk);
-
 
 // ========================================================================= //
 //                                                                           //
@@ -177,20 +152,14 @@ logic                                      colD_en;
 // ========================================================================= //
 
 // ------------------------------------------------------------------------- //
-// Stall logic.
-
-// Datapath is considered stalled whenever there is no push. Note, a pop
-// operation must be concurrent with a push to avoid SRAM collisions.
-// Therefore, no additional qualified is required.
-assign stall = (push_i == '0);
-
-// ------------------------------------------------------------------------- //
 // Push Path
 
 // One-Hot pointer to the next pixel position within the SRAM word.
 //
-assign word_next_en = (~stall);
-assign word_next_w = eol_i ? 'b1 : (word_next_r << 1);
+assign word_next_en = push_i;
+assign word_next_w = sol_i ? 'b10 : (word_next_r << 1);
+
+assign word_next = sol_i ? 'b01 : word_next_r;
 
 // Logic to compose an SRAM word for some arbitrary word width and
 // line buffer pixel width.
@@ -207,11 +176,11 @@ if (i < (PIXELS_PER_WORD_N - 1)) begin : reg_GEN
     .d(word_vld_w[i]), .q(word_vld_r[i]), .arst_n(arst_n), .clk(clk)
   );
 
-  assign word_en[i] = (word_next_r[i] & (~stall));
+  assign word_en[i] = (word_next[i] & push_i);
   assign word_w[i] = dat_i;
 
   assign word_vld_w[i] = 
-     word_vld_r [i] ? (~eol_i) : word_next_r[i] & (~stall);
+     word_vld_r [i] ? (~eol_i) : word_next[i] & push_i;
 
 end: reg_GEN
 
@@ -237,7 +206,7 @@ end: din_pack_GEN
 // stalled, and (2) either end-of-line is reached or the current word
 // being composed is admitted (i.e. full).
 assign advance_push =
-    (~stall)                                                     // (1)
+    push_i                                                       // (1)
   & (eol_i | (word_admit_dat != 'b0));                           // (2)
 
 // ------------------------------------------------------------------------- //
@@ -246,117 +215,78 @@ assign advance_push =
 // Advance pop whenever (1) there is a pop request, (2) the datapath is not
 // stalled, and (3) the skid buffer is not full or the skid buffer is
 // being drained and is reading the last pixel.
-assign advance_pop = 
-    pop_i                                                        // (1)
-  & (~stall)                                                     // (2)
-  & (~skid_vld_r | skid_sel_r[PIXELS_PER_WORD_N - 1]);           // (3)
+assign advance_pop_pre = 
+  pop_i & (~skid_vld_r | skid_sel_r[PIXELS_PER_WORD_N - 1]);
+
+if (PIXELS_PER_WORD_N > 1) begin: advance_pop_multi_GEN
+  assign advance_pop = advance_pop_pre & (~pop_pipe_r.dout_vld);
+end: advance_pop_multi_GEN
+else begin: advance_pop_single_GEN
+  assign advance_pop = advance_pop_pre;
+end: advance_pop_single_GEN
 
 // ------------------------------------------------------------------------- //
 // Address calculation
 
 // End-of-line occurs on the final pixel of the line. Otherwise, on
 // Start-of-Frame, reset value of 'b1, as the first slot is set below.
-assign addr_w = eol_i ? 'b0 : (addr_r + 'b1);
-assign addr_en = advance_push;
-
-// ------------------------------------------------------------------------- //
-// Bank selection logic.
-
-// Bank selection is relative to the write port. It is the next bank
-// to be written on subsequent pushes. Pops take place from the opposite
-// bank. This assumes that the alternate bank has been previously filled.
-
-// Bank selection flop.
-logic                             bank_sel_en;
-`P_DFFRE(logic, bank_sel, bank_sel_en, 'b0, clk, arst_n);
-
-assign bank_sel_en = (~stall) & eol_i;
-assign bank_sel_w = ~bank_sel_r;
+assign addr_clr = (push_i | pop_i) & eol_i;
+assign addr_w = addr_clr ? 'b0 : (addr_r + 'b1);
+assign addr_en = (addr_clr | advance_push | advance_pop);
 
 // ------------------------------------------------------------------------- //
 // SRAM control signals.
 
-// Upto 1 write supported per cycle.
-assign wen[1] = ( bank_sel_r & advance_push) ? push_i : 1'b0;
-assign wen[0] = (~bank_sel_r & advance_push) ? push_i : 1'b0;
-
-assign ren[1] = (~bank_sel_r & advance_pop) ? pop_i : 1'b0;
-assign ren[0] = ( bank_sel_r & advance_pop) ? pop_i : 1'b0;
 // Chip-enable signals for SRAMs.
-assign ce[1] = ( bank_sel_r ? (wen[1] | ren[1]) : 1'b0);
-assign ce[0] = (~bank_sel_r ? (wen[0] | ren[0]) : 1'b0);
+assign ce = (advance_push | advance_pop);
 
 // Read-not-write signals for SRAMs.
-assign rnw[1] = ( bank_sel_r ? ~wen[1] : '1);
-assign rnw[0] = (~bank_sel_r ? ~wen[0] : '1);
+assign rnw = advance_pop;
 
 // ------------------------------------------------------------------------- //
 // SRAM pipelining.
-
-assign pop_pipe_en = advance_pop;
-assign pop_pipe_w = '{bnk : bank_sel_r, dout_vld: (ren != '0)};
+assign pop_pipe_w = '{dout_vld: advance_pop, pop: pop_i};
 
 // ------------------------------------------------------------------------- //
 // SRAM instances.
-
-// Generic ASIC SRAM bank style. Ping-Pong buffer implementation to implement
-// dual-ported concurrent read/write functionality.
-
-for (genvar bnk = 0; bnk < 2; bnk++) begin: bank_GEN
 
 generic_sram #(
   .WORD_W          (SRAM_W)
 , .WORDS_N         (SRAM_WORDS_N)
 ) u_generic_sram (
-  .ce              (ce[bnk])
+  .ce              (ce)
 , .addr            (addr_r)
 , .din             (word_din)
-, .rnw             (rnw[bnk])
-, .dout            (dout[bnk])
-);
-
-end: bank_GEN
-
-// ------------------------------------------------------------------------- //
-// SRAM bank mux.
-
-assign dout_bank_mux_sel = pop_pipe_r.bnk ? 2'b10 : 2'b01;
-
-mux #(.N(2), .W(SRAM_W)) u_dout_bank_mux (
-  .x_i             (dout)
-, .sel_i           (dout_bank_mux_sel)
-, .y_o             (dout_demux)
+, .rnw             (rnw)
+, .dout            (dout)
+, .clk             (clk)
 );
   
 // ------------------------------------------------------------------------- //
 // SRAM skid buffer
 
-// Qualified pop stall signal asserted only whenever a pop operation is
-// present.
-assign stall_pop = stall & pop_pipe_vld_r;
-
 // Skid is always latched regardless of downstream backpressure as
 // state is stored by the skid flops.
-assign skid_en = pop_pipe_vld_r & pop_pipe_r.dout_vld;
-assign skid_w = dout_demux;
+assign skid_en = pop_pipe_r.dout_vld;
+assign skid_w = dout;
 
 // Skid becomes valid whenever (1) it is loaded from SRAM. It remains
 // valid when (2) stalled or when not reading the last pixel.
 assign skid_vld_w =
-    skid_en                                                        // (1)
-  | skid_vld_r & (stall_pop | ~skid_sel_r[PIXELS_PER_WORD_N - 1]); // (2)
+    pop_pipe_r.dout_vld
+  | skid_vld_r & (~pop_pipe_r.pop | ~skid_sel_r[PIXELS_PER_WORD_N - 1]);
 
 // Skid selection logic is loaded on skid enable. It is shifted
 // whenever valid and there is no stall.
-assign skid_sel_en = skid_en | (skid_vld_r & ~stall_pop);
+assign skid_sel_en = pop_pipe_r.dout_vld | (skid_vld_r & pop_pipe_r.pop);
 
 // On skid load (1) select first pixel for next cycle if currently
 // stalled otherwise select second pixel, otherwise (2) shift selection
 // to next pixel.
 //
 assign skid_sel_w = 
-    skid_en
-  ? (stall_pop ? 'b01 : 'b10)                                      // (1)
+    pop_pipe_r.dout_vld
+  ? ( pop_pipe_r.pop ? 'b10 : 'b01)                                // (1)
   : {skid_sel_r[PIXELS_PER_WORD_N-2:0], 1'b0};                     // (2)
 
 // Mux out selected pixel.
@@ -372,13 +302,14 @@ assign skid_demux_bypass = skid_en;
 
 // On bypass, first pixel arrives from SRAM output directly.
 assign colD_w =
-  skid_demux_bypass ? dout_demux[conv_pkg::PIXEL_W - 1:0] : skid_demux;
+  skid_demux_bypass ? dout[conv_pkg::PIXEL_W - 1:0] : skid_demux;
 
 //
-assign colD_en = (~stall_pop) & (skid_en | skid_vld_r);
+assign colD_en = pop_i & (skid_en | skid_vld_r);
 
 // ========================================================================= //
 //                                                                           //
+// Outputs                                                                   //
 // Outputs                                                                   //
 //                                                                           //
 // ========================================================================= //

@@ -53,6 +53,34 @@ module generic_sram #(
 , input wire logic                           rnw
 
 , output wire logic [WORD_W - 1:0]           dout
+
+, input wire logic                           clk
 );
+
+logic [WORD_W - 1:0] mem [0:WORDS_N - 1];
+
+logic                scrambled_dout_update_r;
+logic [WORD_W - 1:0] scrambled_dout_r;
+
+// Write update process.
+always_ff @(posedge clk) begin: write_PROC
+  if (ce && ~rnw) begin
+    mem[addr] <= din;
+  end
+end: write_PROC
+
+// Read update process; reads from memory when ce & rnw is asserted.
+// Otherwise, returns a scrambled version of the last read data.
+always_ff @(posedge clk) begin: read_PROC
+  dout <= (ce & rnw) ? mem[addr] : scrambled_dout_r;
+end: read_PROC
+
+// Block to scramble dout when not being updated.
+always_ff @(posedge clk) begin: scramble_dout_PROC
+  scrambled_dout_update_r <= (ce & rnw);
+  if (scrambled_dout_update_r) begin
+    scrambled_dout_r <= ~dout;
+  end
+end: scramble_dout_PROC
 
 endmodule : generic_sram

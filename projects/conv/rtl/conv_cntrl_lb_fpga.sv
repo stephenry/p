@@ -40,7 +40,7 @@ module conv_cntrl_lb_fpga (
   input wire logic                          push_i
 , input wire logic                          pop_i
 , input wire conv_pkg::pixel_t              dat_i
-, input wire logic                          sof_i
+, input wire logic                          sol_i
 , input wire logic                          eol_i
 
 // -------------------------------------------------------------------------- //
@@ -89,12 +89,12 @@ logic                                  ren;
 
 // End-of-line occurs on the final pixel of the line. Otherwise, on
 // Start-of-Frame, reset value of 'b1, as the first slot is set below.
-assign addr_w = (sof_i ? 'b1 : (eol_i ? 'b0 : addr_r + 'b1));
+assign addr_w = (sol_i ? 'b1 : (eol_i ? 'b0 : addr_r + 'b1));
 assign addr_en = (push_i != '0);
 
 // Start-of-frame is coincident with the first push. The address must
-// therefore use address 0 on that cycle.
-assign addr = sof_i ? 'b0 : addr_r;
+// therefore reset on the cycle cycle.
+assign addr = sol_i ? 'b0 : addr_w;
 
 assign wen = push_i;
 

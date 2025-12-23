@@ -76,9 +76,9 @@ module dp #(
 //                                                                           //
 // ========================================================================= //
 
-logic [N:0][W - 1:0]              dat_w;
+logic [N:1][W - 1:0]              dat_w;
 logic [N:1][W - 1:0]              dat_r;
-logic [N:0]                       vld_w;
+logic [N:1]                       vld_w;
 logic [N:1]                       vld_r;
 logic [N:1]                       dat_en;
 
@@ -103,6 +103,19 @@ end : dat_en_GEN
 
 // ------------------------------------------------------------------------- //
 //
+for (genvar i = 1; i < (N + 1); i = i + 1) begin : dat_GEN
+
+if (i == 1) begin : dat_1_GEN
+    assign dat_w[i] = dat_i;
+end : dat_1_GEN
+else begin : dat_x_GEN
+    assign dat_w[i] = dat_r[i - 1];
+end : dat_x_GEN
+
+end : dat_GEN
+
+// ------------------------------------------------------------------------- //
+//
 if (TRACK_VALIDITY) begin : GEN_TRACK_VALIDITY
 
 for (genvar i = 1; i < (N + 1); i = i + 1) begin : vld_GEN
@@ -120,19 +133,17 @@ end: GEN_TRACK_VALIDITY
 
 // ------------------------------------------------------------------------- //
 //
-assign dat_w[0] = dat_i;
-
 for (genvar i = 1; i < (N + 1); i = i + 1) begin : dp_stages_GEN
 
 // State
 dffe #(.W(W)) u_dp_stage (
-  .d(dat_w[i - 1]), .q(dat_r [i]), .en(dat_en [i]), .clk(clk)
+  .d(dat_w[i]), .q(dat_r [i]), .en(dat_en [i]), .clk(clk)
 );
 
 if (TRACK_VALIDITY) begin : GEN_TRACK_VALIDITY_FLOP
 // Validity
 dffr #(.W(1), .INIT(1'b0)) u_dp_vld (
-  .d(vld_w[i - 1]), .q(vld_r [i]), .arst_n(arst_n), .clk(clk)
+  .d(vld_w[i]), .q(vld_r [i]), .arst_n(arst_n), .clk(clk)
 );
 end: GEN_TRACK_VALIDITY_FLOP
 

@@ -48,6 +48,7 @@ module conv_cntrl (
 
 , input wire logic                          m_tready_i
 
+, output wire logic                         kernel_colD_vld_o
 , output wire logic [4:0]                   kernel_colD_push_o
 , output conv_pkg::kernel_pos_t             kernel_colD_pos_o
 , output conv_pkg::pixel_t [4:0]            kernel_colD_data_o
@@ -76,12 +77,16 @@ typedef struct packed {
 localparam int COL_POS_W = $bits(col_pos_t);
 
 // Interface Delay Pipeline
-col_pos_t                    pixel_pipe_0;
+logic                        pixel_pipe_0_vld;
+col_pos_t                    pixel_pipe_0_pos;
+conv_pkg::pixel_t            pixel_pipe_0_dat;
 
-logic [3:0]                  pixel_pipe_vld_r;
-col_pos_t [3:0]              pixel_pipe_r;
+logic [4:1]                  pixel_pipe_vld_r;
+col_pos_t [4:1]              pixel_pipe_r;
+conv_pkg::pixel_t            pixel_pipe_N_dat_r;
 
-conv_pkg::kernel_pos_t       pixel0_pos;
+logic                        pixel0_vld_r;
+conv_pkg::kernel_pos_t       pixel0_pos_r;
 conv_pkg::pixel_t            pixel0_data_r;
 
 logic                        pos_w2;
@@ -96,10 +101,6 @@ logic                        pos_s1;
 
 logic                        cntrl_stall;
 
-logic                        bank_vld_en;
-logic [4:0]                  bank_vld_r;
-logic [4:0]                  bank_vld_w;
-
 logic                        bank_push_sel_en;
 logic [4:0]                  bank_push_sel_r;
 logic [4:0]                  bank_push_sel_w;
@@ -110,22 +111,38 @@ logic [4:0]                  bank_pop_sel_w;
 
 logic                        row_advance;
 logic                        row_pos_en;
-logic [4:0]                  row_pos_r;
-logic [4:0]                  row_pos_w;
+logic [3:0]                  row_pos_r;
+logic [3:0]                  row_pos_w;
+logic [4:0]                  row_vld_r;
+logic [4:0]                  row_vld_w;
 
 // Line Buffer Control
 logic [4:0]                  lb_push;
 logic [4:0]                  lb_pop;
 conv_pkg::pixel_t            lb_dat;
-logic                        lb_sof;
+logic                        lb_sol;
 logic                        lb_eol;
-logic [4:0]                  lb_sel;
 conv_pkg::pixel_t [4:0]      lb_colD;
 
-logic                       kernel_colD_push_vld;
-logic [4:0]                 kernel_colD_push;
-conv_pkg::kernel_pos_t      kernel_colD_pos;
-conv_pkg::pixel_t [4:0]     kernel_colD_data;
+typedef struct packed {
+  logic [4:0]                pop;
+  logic [4:0]                push;
+  conv_pkg::pixel_t          dat;
+  conv_pkg::kernel_pos_t     pos;
+  logic [4:0]                row_vld;
+} egress_pipe_t;
+localparam int EGRESS_PIPE_W = $bits(egress_pipe_t);
+
+logic                        egress_pipe_in_vld;
+egress_pipe_t                egress_pipe_in;
+
+logic                        egress_pipe_out_vld_r;
+egress_pipe_t                egress_pipe_out_r;
+
+logic                        kernel_colD_vld;
+logic [4:0]                  kernel_colD_push;
+conv_pkg::kernel_pos_t       kernel_colD_pos;
+conv_pkg::pixel_t [4:0]      kernel_colD_data;
 
 // ========================================================================= //
 //                                                                           //
@@ -150,6 +167,39 @@ assign cntrl_stall = (~s_tvalid_i | ~m_tready_i);
 assign s_tready_o = m_tready_i;
 
 // ------------------------------------------------------------------------- //
+// Pixel position and data delay pipeline.
+
+assign pixel_pipe_0_vld = s_tvalid_i;
+assign pixel_pipe_0_pos = '{ sof: s_tuser_i, eol: s_tlast_i }; 
+assign pixel_pipe_0_dat = s_tdata_i;
+
+dp #(.W(COL_POS_W), .N(4)) u_dp_col (
+  .vld_i                   (pixel_pipe_0_vld)
+, .dat_i                   (pixel_pipe_0_pos)
+, .stall_i                 (cntrl_stall)
+, .pipe_vld_o              (pixel_pipe_vld_r)
+, .pipe_dat_o              (pixel_pipe_r)
+, .vld_o                   (/* UNUSED */)
+, .dat_o                   (/* UNUSED */)
+, .clk                     (clk)
+, .arst_n                  (arst_n)
+);
+
+// Pixel delay pipeline to align with Pixel 0 position.
+//
+dp #(.W(conv_pkg::PIXEL_W), .N(2)) u_dp_pixel (
+  .vld_i                   (pixel_pipe_0_vld)
+, .dat_i                   (pixel_pipe_0_dat)
+, .stall_i                 (cntrl_stall)
+, .pipe_vld_o              (/* UNUSED */)
+, .pipe_dat_o              (/* UNUSED */)
+, .vld_o                   (/* UNUSED */)
+, .dat_o                   (pixel_pipe_N_dat_r)
+, .clk                     (clk)
+, .arst_n                  (arst_n)
+);
+
+// ------------------------------------------------------------------------- //
 // Column position determination.
 //
 //  0: Ingress
@@ -172,24 +222,16 @@ assign s_tready_o = m_tready_i;
 //
 // (Qualified on line validity)
 
-assign pos_w2 = (pixel_pipe_r[2].sof | pixel_pipe_r[3].eol);
-assign pos_w1 = (pixel_pipe_r[3].sof | pixel_pipe_r[4].eol);
-assign pos_e2 = (pixel_pipe_r[1].eol);
-assign pos_e1 = (pixel_pipe_r[2].eol);
+assign pos_w2 =
+    pixel_pipe_r[2].sof
+  | (pixel_pipe_vld_r[3] & pixel_pipe_r[3].eol);
 
-assign pixel_pipe_0 = '{ sof: s_tuser_i, eol: s_tlast_i }; 
+assign pos_w1 = 
+    (pixel_pipe_vld_r[3] & pixel_pipe_r[3].sof)
+  | (pixel_pipe_vld_r[4] & pixel_pipe_r[4].eol);
 
-dp #(.W(COL_POS_W), .N(4)) u_dp_col (
-  .vld_i                   (1'b1)
-, .dat_i                   (pixel_pipe_0)
-, .stall_i                 (cntrl_stall)
-, .pipe_vld_o              (pixel_pipe_vld_r)
-, .pipe_dat_o              (pixel_pipe_r)
-, .vld_o                   (/* UNUSED */)
-, .dat_o                   (/* UNUSED */)
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
+assign pos_e1 = pixel_pipe_r[1].eol;
+assign pos_e2 = pixel_pipe_r[2].eol;
 
 // ------------------------------------------------------------------------- //
 // Row position determination.
@@ -212,91 +254,70 @@ dp #(.W(COL_POS_W), .N(4)) u_dp_col (
 //
 //  4: Line +2
 //
+assign pos_n2 = row_vld_r[2] & row_pos_r[2];
+assign pos_n1 = row_vld_r[2] & row_pos_r[3] & row_vld_r[3];
+assign pos_s1 = row_vld_r[2] & row_pos_r[0] & row_vld_r[0];
+assign pos_s2 = row_vld_r[2] & row_pos_r[1] & row_vld_r[1];
 
-assign pos_n2 = pixel_pipe_r[2].sof;
-assign pos_n1 = pixel_pipe_r[1].sof;
-assign pos_s1 = pixel_pipe_r[4].sof;
-assign pos_s2 = pixel_pipe_r[3].sof;
+// ------------------------------------------------------------------------- //
+//
 
-assign row_advance = pixel_pipe_r[2].eol;
-
-localparam logic [4:0] ROW_POS_INIT = 5'b00001;
-
-dffre #(.W(5), .INIT(ROW_POS_INIT)) u_dffr_row_pos (
+localparam logic [3:0] ROW_POS_INIT = 4'b0000;
+dffre #(.W(4), .INIT(ROW_POS_INIT)) u_dffr_row_pos (
   .d(row_pos_w), .q(row_pos_r), .en(row_pos_en), .arst_n(arst_n), .clk(clk));
 
-assign row_pos_en = (~cntrl_stall) & pixel_pipe_r[2].eol;
-assign row_pos_w = {row_pos_r[3:0], pixel_pipe_r[1].sof};
+localparam logic [4:0] ROW_VLD_INIT = 5'b00000;
+dffre #(.W(5), .INIT(ROW_VLD_INIT)) u_dffr_row_vld (
+  .d(row_vld_w), .q(row_vld_r), .en(row_pos_en), .arst_n(arst_n), .clk(clk));
+
+assign row_pos_en = 
+    pixel_pipe_vld_r[1]
+  & (~cntrl_stall)
+  & (pixel_pipe_r[2].eol | pixel_pipe_r[1].sof);
+
+assign row_pos_w = {row_pos_r[2:0], pixel_pipe_r[1].sof};
+assign row_vld_w = {row_vld_r[3:0], 1'b1};
 
 // ------------------------------------------------------------------------- //
-// Bank validity tracking.
-//
-// After the first lines, all banks become valid. This logic is present
-// to inhibit reads from invalid banks during initial frame startup.
+// Pixel 0 registers.
 
-localparam logic [4:0] BANK_VLD_INIT = 5'b00000;
+assign pixel0_vld_r = pixel_pipe_vld_r[2];
 
-dffre #(.W(5), .INIT(BANK_VLD_INIT)) u_dffr_bank_vld (
-  .d(bank_vld_w), .q(bank_vld_r), .en(bank_vld_en), .arst_n(arst_n), .clk(clk));
-
-assign bank_vld_en = (~cntrl_stall) & pixel_pipe_r[2].eol;
-assign bank_vld_w = { bank_vld_r[3:0], 1'b1 };
-
-// ------------------------------------------------------------------------- //
-// Position calculation (relative to pixel a pixel pipeline position 2)
-
-assign pixel0_pos = '{
-  w2: pos_w2, w1: pos_w1, e2: pos_e2, e1: pos_e1,
-  n2: pos_n2, n1: pos_n1, s2: pos_s2, s1: pos_s1
+assign pixel0_pos_r = '{
+  w2: pos_w2, w1: pos_w1, e1: pos_e1, e2: pos_e2,
+  n2: pos_n2, n1: pos_n1, s1: pos_s1, s2: pos_s2
 };
 
-// Pixel delay pipeline to align with Pixel 0 position.
-//
-dp #(.W(conv_pkg::PIXEL_W), .N(2)) u_dp_pixel (
-  .vld_i                   (1'b1)
-, .dat_i                   (s_tdata_i)
-, .stall_i                 (cntrl_stall)
-, .pipe_vld_o              (/* UNUSED */)
-, .pipe_dat_o              (/* UNUSED */)
-, .vld_o                   (/* UNUSED */)
-, .dat_o                   (pixel0_data_r)
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
+assign pixel0_data_r = pixel_pipe_N_dat_r;
 
 // ------------------------------------------------------------------------- //
 // Line Buffer Push Control.
 //
 // Circular allocation line-buffer updated on row advance.
 
-localparam logic [4:0] BANK_PUSH_SEL_INIT = 5'b00001;
-
+localparam logic [4:0] BANK_PUSH_SEL_INIT = 5'b00000;
 dffre #(.W(5), .INIT(BANK_PUSH_SEL_INIT)) u_dffr_bank_push_sel (
   .d(bank_push_sel_w), .q(bank_push_sel_r),
   .en(bank_push_sel_en), .arst_n(arst_n), .clk(clk));
 
 assign bank_push_sel_en = row_pos_en;
-assign bank_push_sel_w = {bank_push_sel_r[3:0], bank_push_sel_r[4]};
+assign bank_push_sel_w = 
+    (row_vld_r == 'b0)
+  ? 5'b00001
+  : {bank_push_sel_r[3:0], bank_push_sel_r[4]};
 
-assign lb_push = cntrl_stall ? 5'b00000 : bank_push_sel_r;
+assign lb_push = pixel0_vld_r & (~cntrl_stall) ? bank_push_sel_r : 5'b00000;
 assign lb_dat = pixel0_data_r;
-assign lb_sof = pixel0_pos.w2;
-assign lb_eol = pixel0_pos.e2;
+assign lb_sol = pixel0_pos_r.w2;
+assign lb_eol = pixel0_pos_r.e2;
 
 // ------------------------------------------------------------------------- //
 // Line Buffer Pop Control.
 
-localparam logic [4:0] BANK_POP_SEL_INIT = 5'b00001;
+assign lb_pop = (lb_push != '0) ? (row_vld_r & ~bank_push_sel_r) : 5'b00000;
 
-dffre #(.W(5), .INIT(BANK_POP_SEL_INIT)) u_dffr_bank_pop_sel (
-  .d(bank_pop_sel_w), .q(bank_pop_sel_r),
-  .en(bank_pop_sel_en), .arst_n(arst_n), .clk(clk));
-
-assign bank_pop_sel_en = (~cntrl_stall) & pixel_pipe_r[2].eol;
-assign bank_pop_sel_w = {bank_pop_sel_r[3:0], bank_pop_sel_r[4]};
-
-assign lb_pop = cntrl_stall ? 5'b00000 : bank_vld_r;
-assign lb_sel = bank_pop_sel_r;
+// ------------------------------------------------------------------------- //
+// Line Buffer Instantiation.
 
 generate case (cfg_pkg::TARGET)
 
@@ -309,7 +330,7 @@ conv_cntrl_lb_fpga u_conv_cntrl_lb_fpga (
   .push_i                 (lb_push[i])
 , .pop_i                  (lb_pop[i])
 , .dat_i                  (lb_dat)
-, .sof_i                  (lb_sof) 
+, .sol_i                  (lb_sol) 
 , .eol_i                  (lb_eol)
 //
 , .colD_o                 (lb_colD[i])
@@ -331,7 +352,7 @@ conv_cntrl_lb_asic u_conv_cntrl_lb_asic (
   .push_i                 (lb_push[i])
 , .pop_i                  (lb_pop[i])
 , .dat_i                  (lb_dat)
-, .sof_i                  (lb_sof) 
+, .sol_i                  (lb_sol) 
 , .eol_i                  (lb_eol)
 //
 , .colD_o                 (lb_colD[i])
@@ -354,72 +375,94 @@ endcase
 endgenerate
 
 // ------------------------------------------------------------------------- //
+// Egress pipeline
+
+assign egress_pipe_in_vld = (lb_push != 'b0);
+assign egress_pipe_in =
+  '{ pop: lb_pop, push: lb_push, dat: pixel0_data_r, pos: pixel0_pos_r,
+     row_vld: row_vld_r };
+
+dp #(
+  .W                       (EGRESS_PIPE_W)
+, .N                       (2)
+, .TRACK_VALIDITY          (1'b1)
+) u_dp_kernel_colD_pos (
+  .vld_i                   (egress_pipe_in_vld)
+, .dat_i                   (egress_pipe_in)
+, .stall_i                 (cntrl_stall)
+, .pipe_vld_o              (/* UNUSED */)
+, .pipe_dat_o              (/* UNUSED */)
+, .vld_o                   (egress_pipe_out_vld_r)
+, .dat_o                   (egress_pipe_out_r)
+, .clk                     (clk)
+, .arst_n                  (arst_n)
+);
+
+// ------------------------------------------------------------------------- //
 // Line buffer rotator.
 
 // Rotate line-buffer outputs based on image position.
+always_comb begin: kernel_colD_rotator_PROC
 
-always_comb begin: lb_rotator_PROC
-
-  case (1'b1) inside
-    bank_pop_sel_r[0]: kernel_colD_data = {
-        lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2]
+  case (egress_pipe_out_r.push) inside
+    5'b00001: kernel_colD_data = {
+        lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4], egress_pipe_out_r.dat
       };
 
-    bank_pop_sel_r[1]: kernel_colD_data = {
-        lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3]
+    5'b00010: kernel_colD_data = {
+        lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0], egress_pipe_out_r.dat
       };
 
-    bank_pop_sel_r[2]: kernel_colD_data = {
-        lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4]
-      };
-    
-    bank_pop_sel_r[3]: kernel_colD_data = {
-        lb_colD[1], lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0]
+    5'b00100: kernel_colD_data = {
+        lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1], egress_pipe_out_r.dat
       };
     
-    bank_pop_sel_r[4]: kernel_colD_data = {
-        lb_colD[2], lb_colD[3], lb_colD[4], lb_colD[0], lb_colD[1]
+    5'b01000: kernel_colD_data = {
+        lb_colD[4], lb_colD[0], lb_colD[1], lb_colD[2], egress_pipe_out_r.dat
+      };
+    
+    5'b10000: kernel_colD_data = {
+        lb_colD[0], lb_colD[1], lb_colD[2], lb_colD[3], egress_pipe_out_r.dat
       };
 
     default: kernel_colD_data = 'x;
   endcase
 
-end : lb_rotator_PROC
+end : kernel_colD_rotator_PROC
 
-// ------------------------------------------------------------------------- //
-// Delay pipeline to align pixel position with latency across line-buffer.
+// Pixel validity determination.
+always_comb begin: kernel_colD_vld_PROC
 
-dp #(
-  .W                       (conv_pkg::KERNEL_POS_W)
-, .N                       (2)
-, .TRACK_VALIDITY          (1'b0)
-) u_dp_kernel_colD_pos (
-  .vld_i                   (1'b1)
-, .dat_i                   (pixel0_pos)
-, .stall_i                 (cntrl_stall)
-, .pipe_vld_o              (/* UNUSED */)
-, .pipe_dat_o              (/* UNUSED */)
-, .vld_o                   (/* UNUSED */)
-, .dat_o                   (kernel_colD_pos)
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
+  case (egress_pipe_out_r.push) inside
+    5'b00001: 
+      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[3]);
 
-dp #(
-  .W                       (5)
-, .N                       (2)
-, .TRACK_VALIDITY          (1'b1)
-) u_dp_kernel_colD_push (
-  .vld_i                   (bank_vld_r[2])
-, .dat_i                   (bank_pop_sel_r)
-, .stall_i                 (cntrl_stall)
-, .pipe_vld_o              (/* UNUSED */)
-, .pipe_dat_o              (/* UNUSED */)
-, .vld_o                   (kernel_colD_push_vld)
-, .dat_o                   (kernel_colD_push)
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
+    5'b00010:
+      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[4]);
+
+    5'b00100:
+      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[0]);
+
+    5'b01000:
+      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[1]);
+    
+    5'b10000:
+      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[2]);
+    
+    default:
+      kernel_colD_vld = 1'bx;
+  endcase
+
+end: kernel_colD_vld_PROC
+
+assign kernel_colD_pos = egress_pipe_out_r.pos;
+
+// Kernel column D outputs.
+assign kernel_colD_push = 
+    egress_pipe_out_vld_r
+  ? (kernel_colD_vld ? (egress_pipe_out_r.push | egress_pipe_out_r.pop) : '0)
+  : 'b0;
+
 
 // ========================================================================= //
 //                                                                           //
@@ -427,7 +470,8 @@ dp #(
 //                                                                           //
 // ========================================================================= //
 
-assign kernel_colD_push_o = kernel_colD_push_vld ? kernel_colD_push : 'b0;
+assign kernel_colD_vld_o = kernel_colD_vld;
+assign kernel_colD_push_o = kernel_colD_push;
 assign kernel_colD_pos_o = kernel_colD_pos;
 assign kernel_colD_data_o = kernel_colD_data;
 

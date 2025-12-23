@@ -80,6 +80,7 @@ module conv (
 
 // kerneling wires:
 //
+logic                                       kernel_colD_vld;
 logic [4:0]                                 kernel_colD_push;
 conv_pkg::kernel_pos_t                      kernel_colD_pos;
 conv_pkg::pixel_t [4:0]                     kernel_colD_data;
@@ -117,6 +118,7 @@ conv_cntrl u_conv_cntrl (
 //
 , .m_tready_i              (m_tready_i)
 //
+, .kernel_colD_vld_o       (kernel_colD_vld)
 , .kernel_colD_push_o      (kernel_colD_push)
 , .kernel_colD_pos_o       (kernel_colD_pos)
 , .kernel_colD_data_o      (kernel_colD_data)
@@ -131,7 +133,8 @@ conv_cntrl u_conv_cntrl (
 
 conv_kernel u_conv_kernel (
 //
-  .colD_push_i               (kernel_colD_push)
+  .colD_vld_i                (kernel_colD_vld)
+, .colD_push_i               (kernel_colD_push)
 , .colD_dat_i                (kernel_colD_data)
 , .colD_pos_i                (kernel_colD_pos)
 //

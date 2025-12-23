@@ -74,16 +74,16 @@ typedef struct packed {
     logic w1;
 
     // East:
-    logic e2;
     logic e1;
+    logic e2;
 
     // North:
     logic n2;
     logic n1;
 
     // South:
-    logic s2;
     logic s1;
+    logic s2;
 
 } kernel_pos_t;
 

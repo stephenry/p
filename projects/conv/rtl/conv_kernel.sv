@@ -37,7 +37,8 @@ module conv_kernel (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic [4:0]                         colD_push_i
+  input wire logic                               colD_vld_i
+, input wire logic [4:0]                         colD_push_i
 , input conv_pkg::pixel_span_t                   colD_dat_i
 , input conv_pkg::kernel_pos_t                   colD_pos_i
 
@@ -68,8 +69,6 @@ module conv_kernel (
 // ========================================================================= //
 
 logic                                  dp_stall;
-logic                                  dp_pixel_pos_vld;
-
 
 conv_pkg::pixel_t
   [conv_pkg::KERNEL_DIAMETER_N - 1:0]
@@ -77,10 +76,21 @@ conv_pkg::pixel_t
 
 localparam int DP_POS_N = 2;
 
-logic [DP_POS_N:1]                     dp_pixel_pos_vld_r;
-conv_pkg::kernel_pos_t [DP_POS_N:1]    dp_pixel_pos_dat_r;
-
 conv_pkg::kernel_t                     kernel_dat;
+
+typedef struct packed {
+  logic                         vld;
+  conv_pkg::kernel_pos_t        pos;
+} dp_cntrl_t;
+
+localparam int DP_CNTRL_W = $bits(dp_cntrl_t);
+
+logic                                  dp_cntrl_vld_in;
+dp_cntrl_t                             dp_cntrl_in;
+
+
+logic                                  dp_cntrl_vld_out;
+dp_cntrl_t                             dp_cntrl_out;
 
 // ========================================================================= //
 //                                                                           //
@@ -88,13 +98,13 @@ conv_pkg::kernel_t                     kernel_dat;
 //                                                                           //
 // ========================================================================= //
 
-assign dp_stall = 1'b0;
+assign dp_stall = (colD_push_i == '0);
 
-assign dp_pixel_pos_vld = |colD_push_i;
+assign dp_cntrl_vld_in = colD_vld_i;
+assign dp_cntrl_in = '{vld: colD_vld_i, pos: colD_pos_i};
 
 // ------------------------------------------------------------------------- //
 //
-
 for (genvar n = 0; n < conv_pkg::KERNEL_DIAMETER_N; n++) begin: n_GEN
 
 dp #(
@@ -118,18 +128,18 @@ dp #(
 end: n_GEN
 
 dp #(
-  .W(conv_pkg::KERNEL_POS_W)
+  .W(DP_CNTRL_W)
 , .N(DP_POS_N)
-) u_dp_pixel_pos (
-  .vld_i                    (dp_pixel_pos_vld)
-, .dat_i                    (colD_pos_i)  
+) u_dp_cntrl (
+  .vld_i                    (dp_cntrl_vld_in)
+, .dat_i                    (dp_cntrl_in)  
 , .stall_i                  (dp_stall)
 //
-, .pipe_vld_o               (dp_pixel_pos_vld_r)
-, .pipe_dat_o               (dp_pixel_pos_dat_r)
+, .pipe_vld_o               (/* UNUSED */)
+, .pipe_dat_o               (/* UNUSED */)
 //
-, .vld_o                    (/* UNUSED */)
-, .dat_o                    (/* UNUSED */)
+, .vld_o                    (dp_cntrl_vld_out)
+, .dat_o                    (dp_cntrl_out)
 //
 , .clk                      (clk)
 , .arst_n                   (arst_n)
@@ -149,9 +159,9 @@ end: kernel_dat_GEN
 //                                                                           //
 // ========================================================================= //
 
-assign kernel_vld_o = dp_pixel_pos_vld_r[DP_POS_N];
+assign kernel_vld_o = dp_cntrl_vld_out;
 assign kernel_dat_o = kernel_dat;
-assign kernel_pos_o = dp_pixel_pos_dat_r[DP_POS_N];
+assign kernel_pos_o = dp_cntrl_out.pos;
 
 endmodule : conv_kernel
 

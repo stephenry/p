@@ -91,7 +91,7 @@ conv_pkg::kernel_t                          kernel_dat_masked;
 
 // Output registers:
 //
-`P_DFFR(logic, m_tvalid, 1'b0, arst_n, clk);
+`P_DFFR(logic, m_tvalid, 1'b0, clk, arst_n);
 
 logic                                       m_tdata_en;
 `P_DFFE(conv_pkg::kernel_t, m_tdata, m_tdata_en, clk);
@@ -116,7 +116,6 @@ conv_cntrl u_conv_cntrl (
 , .s_tready_o              (s_tready_o)
 //
 , .m_tready_i              (m_tready_i)
-, .m_tvalid_o              (m_tvalid_o)
 //
 , .kernel_colD_push_o      (kernel_colD_push)
 , .kernel_colD_pos_o       (kernel_colD_pos)
@@ -179,6 +178,7 @@ endgenerate
 // ------------------------------------------------------------------------- //
 //
 assign m_tvalid_w = kernel_vld;
+assign m_tdata_en = kernel_vld;
 assign m_tdata_w = kernel_dat_masked;
 
 assign m_tuser_w = 1'b0;
@@ -186,7 +186,7 @@ assign m_tlast_w = 1'b0;
 
 // ========================================================================= //
 //                                                                           //
-// Ouputs                                                                    //
+// Outputs                                                                   //
 //                                                                           //
 // ========================================================================= //
 

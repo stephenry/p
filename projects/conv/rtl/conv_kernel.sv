@@ -68,7 +68,6 @@ module conv_kernel (
 // ========================================================================= //
 
 logic                                  dp_stall;
-logic                                  dp_pixel_row_vld;
 logic                                  dp_pixel_pos_vld;
 
 
@@ -89,11 +88,9 @@ conv_pkg::kernel_t                     kernel_dat;
 //                                                                           //
 // ========================================================================= //
 
-// assign dp_stall = (~colD_push_i);
+assign dp_stall = 1'b0;
 
-// assign dp_pixel_row_vld = colD_push_i;
-
-// assign dp_pixel_pos_vld = colD_push_i;
+assign dp_pixel_pos_vld = |colD_push_i;
 
 // ------------------------------------------------------------------------- //
 //
@@ -148,7 +145,7 @@ end: kernel_dat_GEN
 
 // ========================================================================= //
 //                                                                           //
-// Ouputs                                                                    //
+// Outputs                                                                   //
 //                                                                           //
 // ========================================================================= //
 

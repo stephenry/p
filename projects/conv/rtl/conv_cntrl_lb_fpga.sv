@@ -93,8 +93,8 @@ assign addr_w = (sof_i ? 'b1 : (eol_i ? 'b0 : addr_r + 'b1));
 assign addr_en = (push_i != '0);
 
 // Start-of-frame is coincident with the first push. The address must
-// therefore reset on the cycle cycle.
-assign addr = sof_i ? 'b0 : addr_w;
+// therefore use address 0 on that cycle.
+assign addr = sof_i ? 'b0 : addr_r;
 
 assign wen = push_i;
 
@@ -138,7 +138,7 @@ assign colD_en = (dout_vld_r != '0);
 
 // ========================================================================= //
 //                                                                           //
-// Ouputs                                                                    //
+// Outputs                                                                   //
 //                                                                           //
 // ========================================================================= //
 

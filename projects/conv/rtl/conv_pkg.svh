@@ -35,9 +35,6 @@ package conv_pkg;
 // Image Width
 localparam int IMAGE_MAX_W = 4096;
 
-// Image Height
-localparam int IMAGE_MAX_H = 4096;
-
 // Pixel width in bits
 localparam int PIXEL_W = 8;
 
@@ -86,8 +83,6 @@ typedef struct packed {
     logic s2;
 
 } kernel_pos_t;
-
-localparam int KERNEL_POS_W = $bits(kernel_pos_t);
 
 endpackage : conv_pkg
 

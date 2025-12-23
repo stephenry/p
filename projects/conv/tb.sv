@@ -29,6 +29,8 @@
 `include "conv_pkg.svh"
 `include "cfg_pkg.svh"
 
+// Filename does not match module name. Lint violation suppressed by
+// -Wno-DECLFILENAME flag.
 module tb`TB_CFG__SUFFIX (
 
 // -------------------------------------------------------------------------- //

@@ -72,6 +72,18 @@ void Kernel<T, N>::os(std::ostream& os) const {
   }
 }
 
+template <typename T, std::size_t N>
+bool equal(const Kernel<T, N>& lhs, const Kernel<T, N>& rhs) {
+  for (std::size_t j = 0; j < lhs.size(); ++j) {
+    for (std::size_t i = 0; i < lhs.size(); ++i) {
+      if (lhs.data[j][i] != rhs.data[j][i]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 template <typename T>
 struct SlaveInterfaceIn {
   bool tvalid;
@@ -215,33 +227,32 @@ class ConvolutionEngine {
 
   template <typename FwdIt>
   void generate(FwdIt it) const {
-    for (std::ptrdiff_t y = 0;
-      y <= static_cast<std::ptrdiff_t>(frame_.height());
-      ++y) {
-      for (std::ptrdiff_t x = 0;
-        x <= static_cast<std::ptrdiff_t>(frame_.width());
-        ++x) {
+    for (std::size_t y = 0; y <= frame_.height(); ++y) {
+      for (std::size_t x = 0; x <= frame_.width(); ++x) {
         *++it = compute_kernel(y, x);
       }
     }
   }
 
  private:
-  Kernel<T, N> compute_kernel(std::ptrdiff_t y, std::ptrdiff_t x) const {
+  Kernel<T, N> compute_kernel(std::size_t y, std::size_t x) const {
     Kernel<T, N> kernel{};
-    for (std::ptrdiff_t j = 0; j < N; ++j) {
-      for (std::ptrdiff_t i = 0; i < N; ++i) {
-        kernel.data[j][i] =
-          compute_pixel((y + j - kernel.offset()), (x + i - kernel.offset()));
+    for (std::size_t j = 0; j < N; ++j) {
+      for (std::size_t i = 0; i < N; ++i) {
+        const int kernel_y = static_cast<int>(y) + static_cast<int>(j) -
+                             static_cast<int>(Kernel<T, N>::offset());
+        const int kernel_x = static_cast<int>(x) + static_cast<int>(i) -
+                             static_cast<int>(Kernel<T, N>::offset());
+        kernel.data[j][i] = compute_pixel(kernel_y, kernel_x);
       }
     }
     return kernel;
   }
 
-  T compute_pixel(std::ptrdiff_t y, std::ptrdiff_t x) const {
+  T compute_pixel(int y, int x) const {
     // Handle boundary conditions based on extend strategy
-    if (y < 0 || y >= static_cast<std::ptrdiff_t>(frame_.height()) || x < 0 ||
-        x >= static_cast<std::ptrdiff_t>(frame_.width())) {
+    if ((y < 0 || y >= static_cast<int>(frame_.height())) ||
+        (x < 0 || x >= static_cast<int>(frame_.width()))) {
       switch (extend_strategy_) {
         case ExtendStrategy::ZeroPad:
           return T{0};
@@ -250,7 +261,7 @@ class ConvolutionEngine {
           break;
       }
     }
-    return frame_.get_pixel(x, y);
+    return frame_.get_pixel(y, x);
   }
 
   const Frame<T>& frame_;
@@ -404,14 +415,26 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
       return;
     }
 
-    // Otherwise, consume and validate output kernel.
-    // const Kernel<vluint8_t, 5> expected_kernel{expected_.front()};
-    // expected_.pop_front();
-
-    if (m_out.m_tvalid) {
-      m_out.m_tdata.os(std::cout);
-      std::cout << "----\n";
+    if (!m_out.m_tvalid) {
+      return;
     }
+
+    // Otherwise, consume and validate output kernel.
+    if (!equal(m_out.m_tdata, expected_.front())) {
+      std::cout << "Mismatch detected:\n";
+      std::cout << "Received:\n";
+      m_out.m_tdata.os(std::cout);
+      std::cout << "Expected:\n";
+      expected_.front().os(std::cout);
+    } else {
+      std::cout << "Kernel match.\n";
+      std::cout << "Received:\n";
+      m_out.m_tdata.os(std::cout);
+      std::cout << "Expected:\n";
+      expected_.front().os(std::cout);
+    }
+
+    expected_.pop_front();
   }
 
   FrameTransactor frame_tx_;

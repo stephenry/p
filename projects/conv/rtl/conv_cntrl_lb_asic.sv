@@ -187,14 +187,14 @@ end: reg_GEN
 if (i < (PIXELS_PER_WORD_N - 1)) begin : not_last_GEN
 
   assign word_admit_dat[i] =
-    eol_i & word_next_r[i] & (~word_vld_r[i]);
+    eol_i & word_next[i] & (~word_vld_r[i]);
 
   assign word_din[i] = word_admit_dat[i] ? dat_i : word_r[i];
 
 end: not_last_GEN
 else begin: last_GEN
 
-  assign word_admit_dat[i] = (word_vld_r == '1);
+  assign word_admit_dat[i] = word_next[i];
 
   assign word_din[i] = word_admit_dat[i] ? dat_i : '0;
 

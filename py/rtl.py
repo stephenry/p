@@ -77,6 +77,10 @@ class Verilator:
             f"--unused-regexp UNUSED_*",
         ]
 
+        if 'flags' in self._project:
+            for flag in self._project['flags']:
+                cmds.append(f"{flag}")
+ 
         if 'defines' in self._project:
             for k, v in self._project['defines'].items():
                 cmds.append(f'-D{k}={v}')
@@ -168,6 +172,11 @@ class RTLRenderer:
         if 'include' in inc_project:
             for inc in inc_project['include']:
                 self._load_project_include(project, inc)
+
+        if 'flags' in inc_project:
+            if 'flags' not in project:
+                project['flags'] = list()
+            project['flags'].extend(inc_project['flags'])
 
     def render_rtl(self) -> typing.Tuple[bool, list[str]]:
         files = list()

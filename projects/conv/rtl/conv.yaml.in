@@ -40,3 +40,10 @@ include:
     # Pull in common useful definitions
     - @CMAKE_BINARY_DIR@/tb/sv/common.yaml
     - @CMAKE_BINARY_DIR@/projects/common/common.yaml
+
+flags:
+    - -Wall
+    # TB modulename does not match filename to allow parameterization.
+    - -Wno-DECLFILENAME
+    # Allow explicit no-connects on module outputs.
+    - -Wno-PINCONNECTEMPTY

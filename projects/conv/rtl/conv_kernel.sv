@@ -159,7 +159,7 @@ end: kernel_dat_GEN
 //                                                                           //
 // ========================================================================= //
 
-assign kernel_vld_o = dp_cntrl_vld_out;
+assign kernel_vld_o = dp_cntrl_vld_out & dp_cntrl_out.vld;
 assign kernel_dat_o = kernel_dat;
 assign kernel_pos_o = dp_cntrl_out.pos;
 

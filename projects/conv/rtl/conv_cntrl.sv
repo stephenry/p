@@ -105,11 +105,6 @@ logic                        bank_push_sel_en;
 logic [4:0]                  bank_push_sel_r;
 logic [4:0]                  bank_push_sel_w;
 
-logic                        bank_pop_sel_en;
-logic [4:0]                  bank_pop_sel_r;
-logic [4:0]                  bank_pop_sel_w;
-
-logic                        row_advance;
 logic                        row_pos_en;
 logic [3:0]                  row_pos_r;
 logic [3:0]                  row_pos_w;
@@ -139,6 +134,7 @@ egress_pipe_t                egress_pipe_in;
 logic                        egress_pipe_out_vld_r;
 egress_pipe_t                egress_pipe_out_r;
 
+logic                        kernel_colD_vld_pre;
 logic                        kernel_colD_vld;
 logic [4:0]                  kernel_colD_push;
 conv_pkg::kernel_pos_t       kernel_colD_pos;
@@ -430,31 +426,21 @@ always_comb begin: kernel_colD_rotator_PROC
 
 end : kernel_colD_rotator_PROC
 
-// Pixel validity determination.
+// Pixel validity determination. Kernel is valid when the center pixel is valid.
 always_comb begin: kernel_colD_vld_PROC
 
   case (egress_pipe_out_r.push) inside
-    5'b00001: 
-      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[3]);
-
-    5'b00010:
-      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[4]);
-
-    5'b00100:
-      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[0]);
-
-    5'b01000:
-      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[1]);
-    
-    5'b10000:
-      kernel_colD_vld = (egress_pipe_out_vld_r & egress_pipe_out_r.row_vld[2]);
-    
-    default:
-      kernel_colD_vld = 1'bx;
+    5'b00001: kernel_colD_vld_pre = egress_pipe_out_r.row_vld[3];
+    5'b00010: kernel_colD_vld_pre = egress_pipe_out_r.row_vld[4];
+    5'b00100: kernel_colD_vld_pre = egress_pipe_out_r.row_vld[0];
+    5'b01000: kernel_colD_vld_pre = egress_pipe_out_r.row_vld[1];
+    5'b10000: kernel_colD_vld_pre = egress_pipe_out_r.row_vld[2];
+    default:  kernel_colD_vld_pre = 1'bx;
   endcase
 
 end: kernel_colD_vld_PROC
 
+assign kernel_colD_vld = kernel_colD_vld_pre & egress_pipe_out_vld_r;
 assign kernel_colD_pos = egress_pipe_out_r.pos;
 
 // Kernel column D outputs.
@@ -462,7 +448,6 @@ assign kernel_colD_push =
     egress_pipe_out_vld_r
   ? (kernel_colD_vld ? (egress_pipe_out_r.push | egress_pipe_out_r.pop) : '0)
   : 'b0;
-
 
 // ========================================================================= //
 //                                                                           //

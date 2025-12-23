@@ -107,7 +107,7 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
 
 template <typename UUT>
 GenericSynchronousProjectInstance<UUT>::GenericSynchronousProjectInstance(
-    const std::string& name)
+  const std::string& name)
     : ProjectInstanceBase(ProjectInstanceBase::Type::GenericSynchronous, name) {
 }
 
@@ -182,7 +182,7 @@ void GenericSynchronousProjectInstance<UUT>::run(ProjectTestBase* test) {
 
   // Run main test
   state_ = State::POST_RESET;
-  step_cycles_n(1000);
+  step_cycles_n(100);
 }
 
 template <typename UUT>
@@ -202,7 +202,7 @@ void GenericSynchronousProjectInstance<UUT>::perform_reset_sequence() {
 
 template <typename UUT>
 void GenericSynchronousProjectInstance<UUT>::step_cycles_n(
-    std::size_t cycles_n, std::size_t ticks_n) {
+  std::size_t cycles_n, std::size_t ticks_n) {
   const std::size_t half_ticks_n = ticks_n / 2;
 
   while (cycles_n--) {

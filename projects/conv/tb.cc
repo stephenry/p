@@ -29,6 +29,8 @@
 
 #include <algorithm>
 #include <deque>
+#include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -55,7 +57,20 @@ struct Kernel {
   constexpr static std::ptrdiff_t offset() noexcept { return (N / 2); }
 
   T data[N][N];
+
+  void os(std::ostream& os) const;
 };
+
+template <typename T, std::size_t N>
+void Kernel<T, N>::os(std::ostream& os) const {
+  for (std::size_t j = size(); j > 0; --j) {
+    for (std::size_t i = size(); i > 0; --i) {
+      os << std::setw(2) << std::hex
+         << static_cast<uint32_t>(data[j - 1][i - 1]) << ' ';
+    }
+    os << '\n';
+  }
+}
 
 template <typename T>
 struct SlaveInterfaceIn {
@@ -114,6 +129,8 @@ class FrameGenerator {
  public:
   enum class Pattern {
     Incremental,
+    ByRow,
+    ByCol,
     Random,
   };
 
@@ -124,6 +141,14 @@ class FrameGenerator {
   Frame<T> generate() {
     // Populate frame based on pattern
     switch (pattern_) {
+      case Pattern::ByRow:
+        // Fill frame with row-based values
+        return generate_by(true);
+        break;
+      case Pattern::ByCol:
+        // Fill frame with row-based values
+        return generate_by(false);
+        break;
       case Pattern::Incremental:
         // Fill frame with incremental values
         return generate_incremental();
@@ -137,13 +162,24 @@ class FrameGenerator {
   }
 
  private:
+  Frame<T> generate_by(bool row = true) {
+    T pixel{};
+    Frame<T> frame(width_, height_);
+    for (std::size_t y = 0; y < height_; ++y) {
+      for (std::size_t x = 0; x < width_; ++x) {
+        frame.set_pixel(y, x, row ? y : x);
+      }
+    }
+    return frame;
+  }
+
   // Generate frame with incremental pixel values.
   Frame<T> generate_incremental() {
     T pixel{};
     Frame<T> frame(width_, height_);
     for (std::size_t y = 0; y < height_; ++y) {
       for (std::size_t x = 0; x < width_; ++x) {
-        frame.set_pixel(x, y, pixel++);
+        frame.set_pixel(y, x, pixel++);
       }
     }
     return frame;
@@ -154,7 +190,7 @@ class FrameGenerator {
     Frame<T> frame(width_, height_);
     for (std::size_t y = 0; y < height_; ++y) {
       for (std::size_t x = 0; x < width_; ++x) {
-        frame.set_pixel(x, y, tb::RANDOM.uniform<T>());
+        frame.set_pixel(y, x, tb::RANDOM.uniform<T>());
       }
     }
     return frame;
@@ -372,7 +408,10 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
     // const Kernel<vluint8_t, 5> expected_kernel{expected_.front()};
     // expected_.pop_front();
 
-    // TODO: comparison code.
+    if (m_out.m_tvalid) {
+      m_out.m_tdata.os(std::cout);
+      std::cout << "----\n";
+    }
   }
 
   FrameTransactor frame_tx_;
@@ -475,7 +514,7 @@ class BasicIncrementConvTest final : public ConvTestDriver {
   explicit BasicIncrementConvTest(const std::string& args)
       : ConvTestDriver(args) {
     frame_gen_ = std::make_unique<FrameGenerator<vluint8_t>>(
-      16, 16, FrameGenerator<vluint8_t>::Pattern::Incremental);
+      16, 16, FrameGenerator<vluint8_t>::Pattern::ByRow);
   }
 
   Frame<vluint8_t> next_frame() override { return frame_gen_->generate(); }

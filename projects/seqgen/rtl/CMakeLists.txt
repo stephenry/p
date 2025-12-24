@@ -1,4 +1,4 @@
-##========================================================================== ##
+##========================================================================== //
 ## Copyright (c) 2025, Stephen Henry
 ## All rights reserved.
 ##
@@ -23,11 +23,10 @@
 ## CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
-##========================================================================== ##
+##========================================================================== //
 
-sources:
-    - @CMAKE_CURRENT_SOURCE_DIR@/enc.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/mux.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/dp.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/inc.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/common_pkg.svh
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/seqgen.yaml.in
+    ${CMAKE_CURRENT_BINARY_DIR}/seqgen.yaml
+)
+

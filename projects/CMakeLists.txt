@@ -105,6 +105,7 @@ set(P_PROJECT_LIBS "")
 
 add_subdirectory(common)
 add_subdirectory(conv)
+add_subdirectory(seqgen)
 
 set(PROJECT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/projects.cc

@@ -26,14 +26,11 @@
 //========================================================================== //
 
 `include "common_defs.svh"
-`include "flops.svh"
-`include "conv_pkg.svh"
-`include "cfg_pkg.svh"
-`include "tb_pkg.svh"
+`include "seqgen_pkg.svh"
 
-// Generic model to perform a convolution operation on streaming data.
-
-module conv (
+// Filename does not match module name. Lint violation suppressed by
+// -Wno-DECLFILENAME flag.
+module tb`TB_CFG__SUFFIX (
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -41,12 +38,10 @@ module conv (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-  input wire logic                           s_tvalid_i
-, input wire conv_pkg::pixel_t               s_tdata_i
-, input wire logic                           s_tlast_i
-, input wire logic                           s_tuser_i
+  input wire logic                          start_i
 
-, output wire logic                          s_tready_o
+, input wire seqgen_pkg_t::cord_t           w_i
+, input wire seqgen_pkg_t::cord_t           h_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -54,12 +49,18 @@ module conv (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, input wire logic                           m_tready_i
-//
-, output wire logic                          m_tvalid_o
-, output wire conv_pkg::kernel_t             m_tdata_o
-, output wire logic                          m_tuser_o
-, output wire logic                          m_tlast_o
+, output wire coordinate_t                  coord_y_o
+, output wire coordinate_t                  coord_x_o
+
+, output wire logic                         busy_o
+, output wire logic                         done_o
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Parameterizations                                                          //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -73,30 +74,12 @@ module conv (
 
 // ========================================================================= //
 //                                                                           //
-// Wire(s)                                                                   //
+// Wires                                                                     //
 //                                                                           //
 // ========================================================================= //
 
-// kerneling wires:
-//
-logic                                       kernel_colD_vld;
-logic [4:0]                                 kernel_colD_push;
-conv_pkg::kernel_pos_t                      kernel_colD_pos;
-conv_pkg::pixel_t [4:0]                     kernel_colD_data;
-
-logic                                       kernel_vld;
-conv_pkg::kernel_t                          kernel_dat;
-conv_pkg::kernel_pos_t                      kernel_pos;
-conv_pkg::kernel_t                          kernel_dat_masked;
-
-// Output registers:
-//
-`P_DFFR(logic, m_tvalid, 1'b0, clk, arst_n);
-
-logic                                       m_tdata_en;
-`P_DFFE(conv_pkg::kernel_t, m_tdata, m_tdata_en, clk);
-`P_DFFE(logic, m_tuser, m_tdata_en, clk);
-`P_DFFE(logic, m_tlast, m_tdata_en, clk);
+seqgen_pkg_t::cord_t            w_last;
+seqgen_pkg_t::cord_t            h_last;
 
 // ========================================================================= //
 //                                                                           //
@@ -104,101 +87,42 @@ logic                                       m_tdata_en;
 //                                                                           //
 // ========================================================================= //
 
-// ------------------------------------------------------------------------- //
-//
+// Punt these calculations into the TB so that they do not need to be
+// calculated within the UUT. By implication, this just slightly alters
+// the interface definition of the seqgen module.
 
-conv_cntrl u_conv_cntrl (  
-//
-  .s_tvalid_i              (s_tvalid_i)
-, .s_tdata_i               (s_tdata_i)
-, .s_tuser_i               (s_tuser_i)
-, .s_tlast_i               (s_tlast_i)
-, .s_tready_o              (s_tready_o)
-//
-, .m_tready_i              (m_tready_i)
-//
-, .kernel_colD_vld_o       (kernel_colD_vld)
-, .kernel_colD_push_o      (kernel_colD_push)
-, .kernel_colD_pos_o       (kernel_colD_pos)
-, .kernel_colD_data_o      (kernel_colD_data)
-//
-, .clk                     (clk)
-, .arst_n                  (arst_n)
-);
+// w_last is defined as (N - 2) where N is the number of elements
+// along the x-axis.
 
-// ------------------------------------------------------------------------- //
-//
+assign w_last = (w_i - 'd2);
 
+// h_last is defined as (N / 2) where N is the number of elements
+// along the y-axis.
 
-conv_kernel u_conv_kernel (
-//
-  .colD_vld_i                (kernel_colD_vld)
-, .colD_push_i               (kernel_colD_push)
-, .colD_dat_i                (kernel_colD_data)
-, .colD_pos_i                (kernel_colD_pos)
-//
-, .kernel_vld_o              (kernel_vld)
-, .kernel_dat_o              (kernel_dat)
-, .kernel_pos_o              (kernel_pos)
-//
-, .clk                       (clk)
-, .arst_n                    (arst_n)
-);
-
-// ------------------------------------------------------------------------- //
-// Combinational mask logic to zero out pixels that are outside the image
-// boundaries according to the nominated extension strategy.
-
-generate case (cfg_pkg::EXTEND_STRATEGY)
-
-"ZERO_PAD": begin: zero_pad_GEN
-
-conv_mask_zp u_conv_mask_zp (
-    .kernel_i           (kernel_dat)
-  , .kernel_pos_i       (kernel_pos)
-  , .kernel_masked_o    (kernel_dat_masked)
-);
-
-end: zero_pad_GEN
-
-"REPLICATE": begin : replicate_GEN
-
-// TODO(stephenry): implement replicate strategy.
-
-end : replicate_GEN
-
-default: begin: default_GEN
-
-`TB_ERROR("Unsupported extension strategy in conv.sv");
-
-end : default_GEN
-
-endcase
-endgenerate
-
-
-// ------------------------------------------------------------------------- //
-//
-assign m_tvalid_w = kernel_vld;
-assign m_tdata_en = kernel_vld;
-assign m_tdata_w = kernel_dat_masked;
-
-assign m_tuser_w = 1'b0;
-assign m_tlast_w = 1'b0;
+assign h_last = (h_i >> 1);
 
 // ========================================================================= //
 //                                                                           //
-// Outputs                                                                   //
+// UUT                                                                       //
 //                                                                           //
 // ========================================================================= //
 
-assign m_tvalid_o = m_tvalid_r;
-assign m_tdata_o = m_tdata_r;
-assign m_tuser_o = m_tuser_r;
-assign m_tlast_o = m_tlast_r;
+seqgen uut (
+  .start_i              (start_i)
+, .w_last_i             (w_last)
+, .h_last_i             (h_last)
+, .coord_y_o            (coord_y_o)
+, .coord_x_o            (coord_x_o)
+, .busy_o               (busy_o)
+, .done_o               (done_o)
+, .clk                  (clk)
+, .arst_n               (arst_n)
+);
 
-endmodule : conv
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Parameterizations                                                          //
+//                                                                            //
+// -------------------------------------------------------------------------- //
 
-`define FLOPS_UNDEF
-`include "flops.svh"
-`undef FLOPS_UNDEF
+endmodule: tb`TB_CFG__SUFFIX

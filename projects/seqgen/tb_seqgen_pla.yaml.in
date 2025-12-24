@@ -25,9 +25,16 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== ##
 
+top: tb_seqgen_pla
+
 sources:
-    - @CMAKE_CURRENT_SOURCE_DIR@/enc.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/mux.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/dp.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/inc.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/common_pkg.svh
+    # Project files
+    - @CMAKE_CURRENT_SOURCE_DIR@/tb.sv
+
+include:
+    # Pull in common useful definitions
+    - @CMAKE_CURRENT_BINARY_DIR@/rtl/seqgen.yaml
+
+defines:
+    - TB_CFG__SUFFIX: _seqgen_case
+    - TB_CFG__IMPL: PLA

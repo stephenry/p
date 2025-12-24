@@ -26,8 +26,21 @@
 ##========================================================================== ##
 
 sources:
-    - @CMAKE_CURRENT_SOURCE_DIR@/enc.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/mux.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/dp.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/inc.sv
-    - @CMAKE_CURRENT_SOURCE_DIR@/common_pkg.svh
+    # Project files
+    - @CMAKE_CURRENT_SOURCE_DIR@/seqgen.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_cntrl_case.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_cntrl_pla.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_pkg.svh
+    - @CMAKE_CURRENT_SOURCE_DIR@/cfg_pkg.svh
+
+include:
+    # Pull in common useful definitions
+    - @CMAKE_BINARY_DIR@/tb/sv/common.yaml
+    - @CMAKE_BINARY_DIR@/projects/common/common.yaml
+
+flags:
+    - -Wall
+    # TB modulename does not match filename to allow parameterization.
+    - -Wno-DECLFILENAME
+    # Allow explicit no-connects on module outputs.
+    - -Wno-PINCONNECTEMPTY

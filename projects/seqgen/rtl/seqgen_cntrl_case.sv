@@ -1,0 +1,118 @@
+//========================================================================== //
+// Copyright (c) 2025, Stephen Henry
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//========================================================================== //
+
+`include "common_defs.svh"
+
+module seqgen_cntrl_case (
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// State (In)                                                                 //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+  input wire logic                          start_i
+
+, input wire logic                          busy_r_i
+, input wire logic                          done_r_i
+, input wire logic [1:0]                    state_r_i
+
+, input wire logic                          is_last_x_i
+, input wire logic                          is_last_y_i
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// State (Out)                                                                //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+, output wire logic                         busy_w_o
+, output wire logic                         done_w_o
+, output wire logic [1:0]                   state_w_o
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Cntrl (Out)                                                                //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+, output wire logic                         coord_y_inc_o
+, output wire logic                         coord_y_clr_o
+, output wire logic                         coord_x_inc_o
+, output wire logic                         coord_x_clr_o
+);
+
+// ========================================================================= //
+//                                                                           //
+// Wires                                                                     //
+//                                                                           //
+// ========================================================================= //
+
+typedef struct packed {
+    logic [1:0]      state_w;
+    logic            busy_w;
+    logic            done_w;
+} ucode_t;
+
+ucode_t                               ucode;
+
+// ========================================================================= //
+//                                                                           //
+// Logic                                                                     //
+//                                                                           //
+// ========================================================================= //
+
+always_comb begin: cntrl_PROC
+
+    case ({start_i, state_r_i, busy_r_i, done_r_i}) inside
+
+    // Init
+    'b1_??_?_?:
+        ucode = 'b1_00_0_0;
+
+
+    // Done
+    'b0_??_?_1:
+        ucode = 'b0_00_0_1;
+
+    default:
+        ucode = 'bx;
+  
+  endcase
+
+end: cntrl_PROC
+
+// ========================================================================= //
+//                                                                           //
+// Outputs                                                                   //
+//                                                                           //
+// ========================================================================= //
+
+assign state_w_o = ucode.state_w;
+assign busy_w_o = ucode.busy_w;
+assign done_w_o = ucode.done_w;
+
+endmodule: seqgen_cntrl_case

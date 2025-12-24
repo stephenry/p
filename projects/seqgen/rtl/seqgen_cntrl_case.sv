@@ -93,7 +93,15 @@ state_t                                state;
 
 typedef struct packed {
     logic [1:0]      pos;
+
+    logic            y_inc;
+    logic            y_cur;
+
+    logic            x_inc;
+    logic            x_cur;
+
     logic            busy;
+
     logic            done;
 } ucode_t;
 
@@ -124,17 +132,14 @@ always_comb begin: cntrl_PROC
 
     case (state) inside
 
-    // Init
-    'b1_??_??_??_?_?:
-        ucode = 'b00_0_0;
+    // Idle
+    'b1_??_??_??_?_?: ucode = 'b00_00_00_1_0;
 
+    // End
+    'b0_??_??_??_?_1: ucode = 'b00_00_00_0_1;
 
-    // Done
-    'b0_??_??_??_?_1:
-        ucode = 'b00_0_1;
-
-    default:
-        ucode = 'b00_0_0;
+    // Fallthrough, should never be reached.
+    default:          ucode = 'x;
   
   endcase
 
@@ -152,9 +157,9 @@ assign pos_w_o = ucode.pos;
 assign busy_w_o = ucode.busy;
 assign done_w_o = ucode.done;
 
-assign coord_y_inc_o = 'b0;
-assign coord_y_cur_o = 'b0;
-assign coord_x_inc_o = 'b0;
-assign coord_x_cur_o = 'b0;
+assign coord_y_inc_o = ucode.y_inc;
+assign coord_y_cur_o = ucode.y_cur;
+assign coord_x_inc_o = ucode.x_inc;
+assign coord_x_cur_o = ucode.x_cur;
 
 endmodule: seqgen_cntrl_case

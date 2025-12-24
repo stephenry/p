@@ -132,11 +132,14 @@ always_comb begin: cntrl_PROC
 
     case (state) inside
 
-    // Idle
+    // Start:
     'b1_??_??_??_?_?: ucode = 'b00_00_00_1_0;
 
-    // End
+    // End:
     'b0_??_??_??_?_1: ucode = 'b00_00_00_0_1;
+
+    // Reset:
+    'b0_??_??_??_0_0: ucode = 'b00_00_00_0_0;
 
     // Fallthrough, should never be reached.
     default:          ucode = 'x;

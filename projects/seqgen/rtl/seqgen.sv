@@ -108,8 +108,8 @@ module seqgen (
 // Control
 //
 `P_DFF(logic [1:0], pos, clk);
-`P_DFF(logic, busy, clk);
-`P_DFF(logic, done, clk);
+`P_DFFR(logic, busy, 1'b0, clk, arst_n);
+`P_DFFR(logic, done, 1'b0, clk, arst_n);
 
 logic                                   is_first_x;
 logic                                   is_last_x;
@@ -244,7 +244,7 @@ assign done_o = done_r;
 // ========================================================================= //
 
 logic UNUSED__tie_off;
-assign UNUSED__tie_off = |{ inc_y_carry, arst_n };
+assign UNUSED__tie_off = |{ inc_y_carry };
 
 endmodule: seqgen
 

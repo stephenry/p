@@ -31,6 +31,7 @@ generate_project(
 
     YAML_IN
     ${CMAKE_CURRENT_SOURCE_DIR}/tb_seqgen_case.yaml.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/tb_seqgen_pla.yaml.in
 
     CC_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/tb.cc

@@ -53,7 +53,7 @@
 //
 // Focus on PPA optimization. Two implementations of the controller
 // are provided: one using a PLA style implementation, and another
-// using a generic Verilog case statement.
+// using a generic Verilog case posment.
 //
 // At the limit, a controller as simple as this would not require such
 // a focus on PPA, but this is a toy example for educational purposes.
@@ -74,8 +74,8 @@ module seqgen (
 
   input wire logic                          start_i
 
-, input wire seqgen_pkg_t::cord_t           w_last_i
-, input wire seqgen_pkg_t::cord_t           h_last_i
+, input wire seqgen_pkg::coord_t            w_last_i
+, input wire seqgen_pkg::coord_t            h_last_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -83,8 +83,8 @@ module seqgen (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire seqgen_pkg::cord_t            coord_y_o
-, output wire seqgen_pkg::cord_t            coord_x_o
+, output wire seqgen_pkg::coord_t           coord_y_o
+, output wire seqgen_pkg::coord_t           coord_x_o
 
 , output wire logic                         busy_o
 , output wire logic                         done_o
@@ -107,14 +107,9 @@ module seqgen (
 
 // Control
 //
-`P_DFF(logic [1:0], state, clk);
-`D_DFF(logic, busy, clk);
-`D_DFF(logic, done, clk);
-
-logic                                   coord_x_inc;
-logic                                   coord_x_clr;
-logic                                   coord_y_inc;
-logic                                   coord_y_clr;
+`P_DFF(logic [1:0], pos, clk);
+`P_DFF(logic, busy, clk);
+`P_DFF(logic, done, clk);
 
 logic                                   is_first_x;
 logic                                   is_last_x;
@@ -122,18 +117,18 @@ logic                                   is_last_x;
 logic                                   is_first_y;
 logic                                   is_last_y;
 
-seqgen_pkg::cord_t                      inc_x;
-seqgen_pkg::cord_t                      inc_y;
+seqgen_pkg::coord_t                     inc_x;
+seqgen_pkg::coord_t                     inc_y;
 
 // Output flops
 //
 logic                                   coord_x_inc;
 logic                                   coord_x_cur;
-`D_DFF(seqgen_pkg::cord_t, coord_x, clk);
+`P_DFF(seqgen_pkg::coord_t, coord_x, clk);
 
 logic                                   coord_y_inc;
 logic                                   coord_y_cur;
-`D_DFF(seqgen_pkg::cord_t, coord_y, clk);
+`P_DFF(seqgen_pkg::coord_t, coord_y, clk);
 // Tie-offs
 logic                                  inc_y_carry;
 
@@ -154,7 +149,7 @@ generate case (cfg_pkg::IMPL)
     //
     , .busy_r_i             (busy_r)
     , .done_r_i             (done_r)
-    , .state_r_i            (state_r)
+    , .pos_r_i              (pos_r)
     //
     , .is_first_x_i         (is_first_x)
     , .is_last_x_i          (is_last_x)
@@ -163,12 +158,12 @@ generate case (cfg_pkg::IMPL)
     //
     , .busy_w_o             (busy_w)
     , .done_w_o             (done_w)
-    , .state_w_o            (state_w)
+    , .pos_w_o              (pos_w)
     //
-    , .coord_x_inc          (coord_x_inc)
-    , .coord_x_cur          (coord_x_cur)
-    , .coord_y_inc          (coord_y_inc)
-    , .coord_y_cur          (coord_y_cur)
+    , .coord_x_inc_o        (coord_x_inc)
+    , .coord_x_cur_o        (coord_x_cur)
+    , .coord_y_inc_o        (coord_y_inc)
+    , .coord_y_cur_o        (coord_y_cur)
     );
   end: cntrl_pla_GEN
 
@@ -179,7 +174,7 @@ generate case (cfg_pkg::IMPL)
     //
     , .busy_r_i             (busy_r)
     , .done_r_i             (done_r)
-    , .state_r_i            (state_r)
+    , .pos_r_i              (pos_r)
     //
     , .is_first_x_i         (is_first_x)
     , .is_last_x_i          (is_last_x)
@@ -188,12 +183,12 @@ generate case (cfg_pkg::IMPL)
     //
     , .busy_w_o             (busy_w)
     , .done_w_o             (done_w)
-    , .state_w_o            (state_w)
+    , .pos_w_o              (pos_w)
     //
-    , .coord_x_inc          (coord_x_inc)
-    , .coord_x_cur          (coord_x_cur)
-    , .coord_y_inc          (coord_y_inc)
-    , .coord_y_cur          (coord_y_cur)
+    , .coord_x_inc_o        (coord_x_inc)
+    , .coord_x_cur_o        (coord_x_cur)
+    , .coord_y_inc_o        (coord_y_inc)
+    , .coord_y_cur_o        (coord_y_cur)
     );
   end: cntrl_case_GEN
 
@@ -205,23 +200,23 @@ endcase
 endgenerate
 
 assign inc_x = 
-    ({seqgen_pkg::CORD_W{coord_y_inc}} & coord_y_r)
-  | ({seqgen_pkg::CORD_W{coord_x_inc}} & coord_x_r)
+    ({cfg_pkg::COORD_W{coord_y_inc}} & coord_y_r)
+  | ({cfg_pkg::COORD_W{coord_x_inc}} & coord_x_r)
   ;
 
 // Shared incrementer:
-inc #(.W (cfg_pkg::COORDINATE_W)) u_inc (
-  .x_i(inc_x)), .y_o (inc_y), .carry_o (inc_y_carry)
+inc #(.W(cfg_pkg::COORD_W)) u_inc (
+  .x_i(inc_x), .y_o(inc_y), .carry_o(inc_y_carry)
 );
 
 assign coord_y_w =
-    ({seqgen_pkg::CORD_W{coord_y_inc}} & inc_y)
-  | ({seqgen_pkg::CORD_W{coord_y_cur}} & coord_y_r)
+    ({cfg_pkg::COORD_W{coord_y_inc}} & inc_y)
+  | ({cfg_pkg::COORD_W{coord_y_cur}} & coord_y_r)
   ;
 
 assign coord_x_w =
-    ({seqgen_pkg::CORD_W{coord_x_inc}} & inc_x)
-  | ({seqgen_pkg::CORD_W{coord_x_cur}} & coord_x_r)
+    ({cfg_pkg::COORD_W{coord_x_inc}} & inc_x)
+  | ({cfg_pkg::COORD_W{coord_x_cur}} & coord_x_r)
   ;
 
 assign is_first_x = (coord_x_r == '0);
@@ -249,7 +244,7 @@ assign done_o = done_r;
 // ========================================================================= //
 
 logic UNUSED__tie_off;
-assign UNUSED__tie_off = |{ inc_y_carry };
+assign UNUSED__tie_off = |{ inc_y_carry, arst_n };
 
 endmodule: seqgen
 

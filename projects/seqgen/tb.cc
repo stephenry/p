@@ -30,4 +30,10 @@
 #include "v/Vtb_seqgen_case.h"
 #include "v/Vtb_seqgen_pla.h"
 
-int foo() { return 0; }
+namespace projects::seqgen {
+
+void register_project() {
+  // NOP
+}
+
+}  // namespace projects::seqgen

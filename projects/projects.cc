@@ -25,13 +25,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#include "conv/tb.h"
+// #include "conv/tb.h"
+#include "seqgen/tb.h"
 
 namespace projects {
 
 void register_projects() {
   // TODO
-  projects::conv::register_project();
+  //   projects::conv::register_project();
+  projects::seqgen::register_project();
 }
 
 }  // namespace projects

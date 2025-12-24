@@ -38,7 +38,7 @@ module seqgen_cntrl_pla (
 
 , input wire logic                          busy_r_i
 , input wire logic                          done_r_i
-, input wire logic [1:0]                    state_r_i
+, input wire logic [1:0]                    pos_r_i
 
 , input wire logic                          is_first_x_i
 , input wire logic                          is_last_x_i
@@ -54,7 +54,7 @@ module seqgen_cntrl_pla (
 
 , output wire logic                         busy_w_o
 , output wire logic                         done_w_o
-, output wire logic [1:0]                   state_w_o
+, output wire logic [1:0]                   pos_w_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -62,10 +62,30 @@ module seqgen_cntrl_pla (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire logic                         coord_y_inc_o
-, output wire logic                         coord_y_cur_o
 , output wire logic                         coord_x_inc_o
 , output wire logic                         coord_x_cur_o
+, output wire logic                         coord_y_inc_o
+, output wire logic                         coord_y_cur_o
 );
+
+assign busy_w_o = 1'b0;
+assign done_w_o = 1'b0;
+assign pos_w_o  = 2'b00;
+assign coord_x_inc_o = 1'b0;
+assign coord_x_cur_o = 1'b0;
+assign coord_y_inc_o = 1'b0;
+assign coord_y_cur_o = 1'b0;
+
+logic UNUSED__tie_off;
+assign UNUSED__tie_off = |{
+  start_i,
+  busy_r_i,
+  done_r_i,
+  pos_r_i,
+  is_first_x_i,
+  is_last_x_i,
+  is_first_y_i,
+  is_last_y_i
+};
 
 endmodule: seqgen_cntrl_pla

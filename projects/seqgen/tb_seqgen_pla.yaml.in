@@ -36,5 +36,5 @@ include:
     - @CMAKE_CURRENT_BINARY_DIR@/rtl/seqgen.yaml
 
 defines:
-    - TB_CFG__SUFFIX: _seqgen_case
-    - TB_CFG__IMPL: pla
+    TB_CFG__SUFFIX: _seqgen_pla
+    TB_CFG__IMPL: pla

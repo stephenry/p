@@ -42,7 +42,7 @@ module inc #(
 
 // -------------------------------------------------------------------------- //
 // Encoded output
-, output wire logic [W- 1:0]                     y_o
+, output wire logic [W - 1:0]                    y_o
 , output wire logic                              carry_o
 );
 

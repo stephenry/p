@@ -25,15 +25,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef PROJECTS_SEQGEN_SEQGEN_PKG_SVH
-`define PROJECTS_SEQGEN_SEQGEN_PKG_SVH
+#ifndef PROJECTS_SEQGEN_TB_H
+#define PROJECTS_SEQGEN_TB_H
 
-`include "cfg_pkg.svh"
+namespace projects::seqgen {
 
-package seqgen_pkg;
+void register_project();
 
-typedef logic [cfg_pkg::COORD_W - 1:0] coord_t;
-
-endpackage : seqgen_pkg
-
-`endif /* PROJECTS_SEQGEN_SEQGEN_PKG_SVH */
+}  // namespace projects::seqgen
+#endif

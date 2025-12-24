@@ -38,7 +38,7 @@ module seqgen_cntrl_case (
 
 , input wire logic                          busy_r_i
 , input wire logic                          done_r_i
-, input wire logic [1:0]                    state_r_i
+, input wire logic [1:0]                    pos_r_i
 
 , input wire logic                          is_first_x_i
 , input wire logic                          is_last_x_i
@@ -54,7 +54,7 @@ module seqgen_cntrl_case (
 
 , output wire logic                         busy_w_o
 , output wire logic                         done_w_o
-, output wire logic [1:0]                   state_w_o
+, output wire logic [1:0]                   pos_w_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -75,12 +75,29 @@ module seqgen_cntrl_case (
 // ========================================================================= //
 
 typedef struct packed {
-    logic [1:0]      state_w;
-    logic            busy_w;
-    logic            done_w;
+    logic             start;
+
+    logic [1:0]       pos;
+
+    logic             is_first_x;
+    logic             is_last_x;
+
+    logic             is_first_y;
+    logic             is_last_y;
+
+    logic             busy;
+    logic             done;
+} state_t;
+
+state_t                                state;
+
+typedef struct packed {
+    logic [1:0]      pos;
+    logic            busy;
+    logic            done;
 } ucode_t;
 
-ucode_t                               ucode;
+ucode_t                                ucode;
 
 // ========================================================================= //
 //                                                                           //
@@ -90,23 +107,40 @@ ucode_t                               ucode;
 
 always_comb begin: cntrl_PROC
 
-    case ({start_i, state_r_i, busy_r_i, done_r_i}) inside
+    state = '{
+        start: start_i,
+
+        pos: pos_r_i,
+
+        is_first_x: is_first_x_i,
+        is_last_x: is_last_x_i,
+
+        is_first_y: is_first_y_i,
+        is_last_y: is_last_y_i,
+
+        busy: busy_r_i,
+        done: done_r_i
+    };
+
+    case (state) inside
 
     // Init
-    'b1_??_?_?:
-        ucode = 'b1_00_0_0;
+    'b1_??_??_??_?_?:
+        ucode = 'b00_0_0;
 
 
     // Done
-    'b0_??_?_1:
-        ucode = 'b0_00_0_1;
+    'b0_??_??_??_?_1:
+        ucode = 'b00_0_1;
 
     default:
-        ucode = 'bx;
+        ucode = 'b00_0_0;
   
   endcase
 
 end: cntrl_PROC
+
+
 
 // ========================================================================= //
 //                                                                           //
@@ -114,8 +148,13 @@ end: cntrl_PROC
 //                                                                           //
 // ========================================================================= //
 
-assign state_w_o = ucode.state_w;
-assign busy_w_o = ucode.busy_w;
-assign done_w_o = ucode.done_w;
+assign pos_w_o = ucode.pos;
+assign busy_w_o = ucode.busy;
+assign done_w_o = ucode.done;
+
+assign coord_y_inc_o = 'b0;
+assign coord_y_cur_o = 'b0;
+assign coord_x_inc_o = 'b0;
+assign coord_x_cur_o = 'b0;
 
 endmodule: seqgen_cntrl_case

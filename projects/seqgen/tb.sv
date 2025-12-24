@@ -40,8 +40,8 @@ module tb`TB_CFG__SUFFIX (
 
   input wire logic                          start_i
 
-, input wire seqgen_pkg_t::cord_t           w_i
-, input wire seqgen_pkg_t::cord_t           h_i
+, input wire seqgen_pkg::coord_t            w_i
+, input wire seqgen_pkg::coord_t            h_i
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -49,8 +49,8 @@ module tb`TB_CFG__SUFFIX (
 //                                                                            //
 // -------------------------------------------------------------------------- //
 
-, output wire coordinate_t                  coord_y_o
-, output wire coordinate_t                  coord_x_o
+, output wire seqgen_pkg::coord_t           coord_y_o
+, output wire seqgen_pkg::coord_t           coord_x_o
 
 , output wire logic                         busy_o
 , output wire logic                         done_o
@@ -78,8 +78,8 @@ module tb`TB_CFG__SUFFIX (
 //                                                                           //
 // ========================================================================= //
 
-seqgen_pkg_t::cord_t            w_last;
-seqgen_pkg_t::cord_t            h_last;
+seqgen_pkg::coord_t              w_last;
+seqgen_pkg::coord_t              h_last;
 
 // ========================================================================= //
 //                                                                           //

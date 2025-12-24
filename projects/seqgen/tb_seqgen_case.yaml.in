@@ -37,5 +37,5 @@ include:
 
 defines:
     - TB_CFG__SUFFIX: _seqgen_case
-    - TB_CFG__IMPL: CASE
+    - TB_CFG__IMPL: case
 

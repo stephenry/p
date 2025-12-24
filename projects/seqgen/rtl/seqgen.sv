@@ -144,7 +144,7 @@ logic                                  inc_y_carry;
 
 generate case (cfg_pkg::IMPL)
 
-  cfg_pkg::CNTRL_IMPL__PLA: begin: cntrl_pla_GEN
+  "pla": begin: cntrl_pla_GEN
     seqgen_cntrl_pla u_cntrl (
     //
       .start_i              (start_i)
@@ -167,7 +167,7 @@ generate case (cfg_pkg::IMPL)
     );
   end: cntrl_pla_GEN
 
-  cfg_pkg::CNTRL_IMPL__CASE: begin: cntrl_case_GEN
+  "case": begin: cntrl_case_GEN
     seqgen_cntrl_case u_cntrl (
     //
       .start_i              (start_i)

@@ -37,4 +37,4 @@ include:
 
 defines:
     - TB_CFG__SUFFIX: _seqgen_case
-    - TB_CFG__IMPL: PLA
+    - TB_CFG__IMPL: pla

@@ -116,8 +116,11 @@ logic                                   coord_x_clr;
 logic                                   coord_y_inc;
 logic                                   coord_y_clr;
 
-logic                                   is_last_y;
+logic                                   is_first_x;
 logic                                   is_last_x;
+
+logic                                   is_first_y;
+logic                                   is_last_y;
 
 seqgen_pkg::cord_t                      inc_x;
 seqgen_pkg::cord_t                      inc_y;
@@ -153,7 +156,9 @@ generate case (cfg_pkg::IMPL)
     , .done_r_i             (done_r)
     , .state_r_i            (state_r)
     //
+    , .is_first_x_i         (is_first_x)
     , .is_last_x_i          (is_last_x)
+    , .is_first_y_i         (is_first_y)
     , .is_last_y_i          (is_last_y)
     //
     , .busy_w_o             (busy_w)
@@ -176,7 +181,9 @@ generate case (cfg_pkg::IMPL)
     , .done_r_i             (done_r)
     , .state_r_i            (state_r)
     //
+    , .is_first_x_i         (is_first_x)
     , .is_last_x_i          (is_last_x)
+    , .is_first_y_i         (is_first_y)
     , .is_last_y_i          (is_last_y)
     //
     , .busy_w_o             (busy_w)
@@ -218,8 +225,11 @@ assign coord_x_w =
   | ({seqgen_pkg::CORD_W{~coord_x_clr}} & coord_x_r)
   ;
 
-assign is_last_y = (coord_y_r == h_last_i);
+assign is_first_x = (coord_x_r == '0);
 assign is_last_x = (coord_x_r == w_last_i);
+
+assign is_first_y = (coord_y_r == '0);
+assign is_last_y = (coord_y_r == h_last_i);
 
 // ========================================================================= //
 //                                                                           //

@@ -40,7 +40,10 @@ module seqgen_cntrl_pla (
 , input wire logic                          done_r_i
 , input wire logic [1:0]                    state_r_i
 
+, input wire logic                          is_first_x_i
 , input wire logic                          is_last_x_i
+
+, input wire logic                          is_first_y_i
 , input wire logic                          is_last_y_i
 
 // -------------------------------------------------------------------------- //

@@ -128,11 +128,11 @@ seqgen_pkg::cord_t                      inc_y;
 // Output flops
 //
 logic                                   coord_x_inc;
-logic                                   coord_x_clr;
+logic                                   coord_x_cur;
 `D_DFF(seqgen_pkg::cord_t, coord_x, clk);
 
 logic                                   coord_y_inc;
-logic                                   coord_y_clr;
+logic                                   coord_y_cur;
 `D_DFF(seqgen_pkg::cord_t, coord_y, clk);
 // Tie-offs
 logic                                  inc_y_carry;
@@ -166,9 +166,9 @@ generate case (cfg_pkg::IMPL)
     , .state_w_o            (state_w)
     //
     , .coord_x_inc          (coord_x_inc)
-    , .coord_x_clr          (coord_x_clr)
+    , .coord_x_cur          (coord_x_cur)
     , .coord_y_inc          (coord_y_inc)
-    , .coord_y_clr          (coord_y_clr)
+    , .coord_y_cur          (coord_y_cur)
     );
   end: cntrl_pla_GEN
 
@@ -191,9 +191,9 @@ generate case (cfg_pkg::IMPL)
     , .state_w_o            (state_w)
     //
     , .coord_x_inc          (coord_x_inc)
-    , .coord_x_clr          (coord_x_clr)
+    , .coord_x_cur          (coord_x_cur)
     , .coord_y_inc          (coord_y_inc)
-    , .coord_y_clr          (coord_y_clr)
+    , .coord_y_cur          (coord_y_cur)
     );
   end: cntrl_case_GEN
 
@@ -210,19 +210,18 @@ assign inc_x =
   ;
 
 // Shared incrementer:
-//
 inc #(.W (cfg_pkg::COORDINATE_W)) u_inc (
   .x_i(inc_x)), .y_o (inc_y), .carry_o (inc_y_carry)
 );
 
 assign coord_y_w =
-    ({seqgen_pkg::CORD_W{ coord_y_inc}} & inc_y)
-  | ({seqgen_pkg::CORD_W{~coord_y_clr}} & coord_y_r)
+    ({seqgen_pkg::CORD_W{coord_y_inc}} & inc_y)
+  | ({seqgen_pkg::CORD_W{coord_y_cur}} & coord_y_r)
   ;
 
 assign coord_x_w =
-    ({seqgen_pkg::CORD_W{ coord_x_inc}} & inc_x)
-  | ({seqgen_pkg::CORD_W{~coord_x_clr}} & coord_x_r)
+    ({seqgen_pkg::CORD_W{coord_x_inc}} & inc_x)
+  | ({seqgen_pkg::CORD_W{coord_x_cur}} & coord_x_r)
   ;
 
 assign is_first_x = (coord_x_r == '0);

@@ -63,9 +63,9 @@ module seqgen_cntrl_pla (
 // -------------------------------------------------------------------------- //
 
 , output wire logic                         coord_y_inc_o
-, output wire logic                         coord_y_clr_o
+, output wire logic                         coord_y_cur_o
 , output wire logic                         coord_x_inc_o
-, output wire logic                         coord_x_clr_o
+, output wire logic                         coord_x_cur_o
 );
 
 endmodule: seqgen_cntrl_pla

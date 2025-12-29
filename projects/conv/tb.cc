@@ -86,6 +86,12 @@ bool equal(const Kernel<T, N>& lhs, const Kernel<T, N>& rhs) {
 
 template <typename T>
 struct SlaveInterfaceIn {
+  explicit SlaveInterfaceIn() {
+    tvalid = false;
+    tdata = T{0};
+    tlast = false;
+    tuser = false;
+  }
   bool tvalid;
   T tdata;
   bool tlast;  // End-Of-Line (EOL)
@@ -93,7 +99,6 @@ struct SlaveInterfaceIn {
 };
 
 struct SlaveInterfaceOut {
-  bool tvalid;
   bool tready;
 };
 
@@ -104,6 +109,9 @@ struct MasterInterfaceOut {
 };
 
 struct MasterInterfaceIn {
+  explicit MasterInterfaceIn() { m_tready = true; }
+  explicit MasterInterfaceIn(bool tready) { m_tready = tready; }
+
   bool m_tready;
 };
 
@@ -227,8 +235,8 @@ class ConvolutionEngine {
 
   template <typename FwdIt>
   void generate(FwdIt it) const {
-    for (std::size_t y = 0; y <= frame_.height(); ++y) {
-      for (std::size_t x = 0; x <= frame_.width(); ++x) {
+    for (std::size_t y = 0; y < frame_.height(); ++y) {
+      for (std::size_t x = 0; x < frame_.width(); ++x) {
         *++it = compute_kernel(y, x);
       }
     }
@@ -243,7 +251,10 @@ class ConvolutionEngine {
                              static_cast<int>(Kernel<T, N>::offset());
         const int kernel_x = static_cast<int>(x) + static_cast<int>(i) -
                              static_cast<int>(Kernel<T, N>::offset());
-        kernel.data[j][i] = compute_pixel(kernel_y, kernel_x);
+
+        const std::size_t jj = Kernel<T, N>::size() - j - 1;
+        const std::size_t ii = Kernel<T, N>::size() - i - 1;
+        kernel.data[jj][ii] = compute_pixel(kernel_y, kernel_x);
       }
     }
     return kernel;
@@ -296,11 +307,15 @@ concept VConvModule = requires(T t) {
 struct ConvTestbenchInterface {
   virtual ~ConvTestbenchInterface() = default;
 
+  virtual void s_idle() noexcept { s_in(SlaveInterfaceIn<vluint8_t>{}); }
+  virtual SlaveInterfaceIn<vluint8_t> s_in() const noexcept = 0;
   virtual void s_in(const SlaveInterfaceIn<vluint8_t>& in) noexcept = 0;
   virtual SlaveInterfaceOut s_out() const noexcept = 0;
 
-  virtual MasterInterfaceOut<vluint8_t, 5> m_out() const noexcept = 0;
+  virtual void m_idle() noexcept { m_in(MasterInterfaceIn{}); }
+  virtual MasterInterfaceIn m_in() const noexcept = 0;
   virtual void m_in(const MasterInterfaceIn& in) noexcept = 0;
+  virtual MasterInterfaceOut<vluint8_t, 5> m_out() const noexcept = 0;
 };
 
 class FrameTransactor {
@@ -348,18 +363,29 @@ class FrameTransactor {
 };
 
 class ConvTestDriver : public tb::GenericSynchronousTest {
+  // Slave interface
+  SlaveInterfaceIn<vluint8_t> s_in_;
+  SlaveInterfaceOut s_out_;
+
+  // Master interface
+  MasterInterfaceIn m_in_;
+  MasterInterfaceOut<vluint8_t, 5> m_out_;
+
  public:
   explicit ConvTestDriver(const std::string& args)
       : tb::GenericSynchronousTest(args) {}
 
   virtual ~ConvTestDriver() = default;
 
-  void init() override {
-    frame_ = next_frame();
-    frame_tx_.init(std::addressof(*frame_));
+  void init(tb::ProjectInstanceBase* base) override {
+    ConvTestbenchInterface* intf = cast_interface(base);
+
+    // Idle interfaces
+    intf->m_idle();
+    intf->s_idle();
   }
 
-  void fini() override {
+  void fini(tb::ProjectInstanceBase* base) override {
     // Finalization code here.
   }
 
@@ -367,29 +393,46 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
   virtual Frame<vluint8_t> next_frame() = 0;
 
   void on_negedge(tb::ProjectInstanceBase* instance) override {
+    // Pixel to be emitted in the current cycle.
+    bool emit_pixel = true;
+
+    // Backpressure to be applied in the current cycle.
+    bool apply_backpressure = false;
+
+    ConvTestbenchInterface* intf = cast_interface(instance);
+
+    // Sample outputs
+    s_out_ = intf->s_out();
+    m_out_ = intf->m_out();
+
+    // Evaluate TB -> UUT interface
+    on_negedge_internal_in(intf, emit_pixel, apply_backpressure);
+
+    // Evaluate UUT -> TB interface
+    on_negedge_internal_out(intf, apply_backpressure);
+
+    // Drive new inputs
+    intf->m_in(m_in_);
+    intf->s_in(s_in_);
+  }
+
+ private:
+  ConvTestbenchInterface* cast_interface(tb::ProjectInstanceBase* instance) {
     ConvTestbenchInterface* intf =
       dynamic_cast<ConvTestbenchInterface*>(instance);
     if (!intf) {
       throw std::runtime_error(
         "ProjectInstanceBase is not of type ConvTestbenchInterface");
     }
-    on_negedge_internal(intf);
+    return intf;
   }
 
- private:
-  void on_negedge_internal(ConvTestbenchInterface* intf) {
-    // Evaluate TB -> UUT interface
-    on_negedge_internal_in(intf);
-
-    // Evaluate UUT -> TB interface
-    on_negedge_internal_out(intf);
-  }
-
-  void on_negedge_internal_in(ConvTestbenchInterface* intf) {
-    // Consume pixel if accepted
-    const SlaveInterfaceOut s_in{intf->s_out()};
-    if (s_in.tvalid && s_in.tready) {
-      frame_tx_.advance();
+  void on_negedge_internal_in(
+    ConvTestbenchInterface* intf, bool emit_pixel, bool apply_backpressure) {
+    if (!emit_pixel) {
+      // Idle input interface
+      s_in_ = SlaveInterfaceIn<vluint8_t>{};
+      return;
     }
 
     if (frame_tx_.frame_exhausted()) {
@@ -402,36 +445,44 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
       ceng.generate(std::back_inserter(expected_));
     }
 
-    intf->s_in(frame_tx_.next());
+    // Provide next pixel to input interface
+    s_in_ = frame_tx_.next();
+
+    // Consume pixel if accepted
+    if (s_out_.tready) {
+      frame_tx_.advance();
+    }
   }
 
-  void on_negedge_internal_out(ConvTestbenchInterface* intf) {
+  void on_negedge_internal_out(
+    ConvTestbenchInterface* intf, bool apply_backpressure) {
     // Check Master (out) interface
-    const bool apply_backpressure = false;
-    intf->m_in(MasterInterfaceIn{!apply_backpressure});
-
-    const MasterInterfaceOut<vluint8_t, 5> m_out{intf->m_out()};
-    if (m_out.m_tvalid && apply_backpressure) {
+    m_in_ = MasterInterfaceIn{!apply_backpressure};
+    if (!m_out_.m_tvalid || !m_in_.m_tready) {
       return;
     }
 
-    if (!m_out.m_tvalid) {
+    if (m_out_.m_tvalid && expected_.empty()) {
+      std::cout << "Received unexpected output kernel:\n";
+      m_out_.m_tdata.os(std::cout);
+      return;
+    }
+
+    if (expected_.empty()) {
       return;
     }
 
     // Otherwise, consume and validate output kernel.
-    if (!equal(m_out.m_tdata, expected_.front())) {
+    if (!equal(m_out_.m_tdata, expected_.front())) {
       std::cout << "Mismatch detected:\n";
       std::cout << "Received:\n";
-      m_out.m_tdata.os(std::cout);
+      m_out_.m_tdata.os(std::cout);
       std::cout << "Expected:\n";
       expected_.front().os(std::cout);
     } else {
       std::cout << "Kernel match.\n";
       std::cout << "Received:\n";
-      m_out.m_tdata.os(std::cout);
-      std::cout << "Expected:\n";
-      expected_.front().os(std::cout);
+      m_out_.m_tdata.os(std::cout);
     }
 
     expected_.pop_front();
@@ -448,6 +499,15 @@ class ConvTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
  public:
   using base_type = tb::GenericSynchronousProjectInstance<UUT>;
 
+  SlaveInterfaceIn<vluint8_t> s_in() const noexcept override {
+    SlaveInterfaceIn<vluint8_t> in{};
+    in.tvalid = tb::vsupport::from_v<bool>(uut()->s_tvalid_i);
+    in.tdata = uut()->s_tdata_i;
+    in.tlast = tb::vsupport::from_v<bool>(uut()->s_tlast_i);
+    in.tuser = tb::vsupport::from_v<bool>(uut()->s_tuser_i);
+    return in;
+  }
+
   void s_in(const SlaveInterfaceIn<vluint8_t>& in) noexcept override {
     uut()->s_tvalid_i = tb::vsupport::to_v(in.tvalid);
     uut()->s_tdata_i = in.tdata;
@@ -457,7 +517,6 @@ class ConvTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
 
   SlaveInterfaceOut s_out() const noexcept override {
     SlaveInterfaceOut out{};
-    out.tvalid = tb::vsupport::from_v<bool>(uut()->s_tvalid_i);
     out.tready = tb::vsupport::from_v<bool>(uut()->s_tready_o);
     return out;
   }
@@ -493,6 +552,12 @@ class ConvTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
     out.m_tdata.data[4][4] = uut()->m_tdata_4_4_o;
 
     return out;
+  }
+
+  MasterInterfaceIn m_in() const noexcept override {
+    MasterInterfaceIn in{};
+    in.m_tready = tb::vsupport::from_v<bool>(uut()->m_tready_i);
+    return in;
   }
 
   void m_in(const MasterInterfaceIn& in) noexcept override {
@@ -537,7 +602,7 @@ class BasicIncrementConvTest final : public ConvTestDriver {
   explicit BasicIncrementConvTest(const std::string& args)
       : ConvTestDriver(args) {
     frame_gen_ = std::make_unique<FrameGenerator<vluint8_t>>(
-      16, 16, FrameGenerator<vluint8_t>::Pattern::ByRow);
+      5, 5, FrameGenerator<vluint8_t>::Pattern::ByRow);
   }
 
   Frame<vluint8_t> next_frame() override { return frame_gen_->generate(); }

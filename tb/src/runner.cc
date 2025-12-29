@@ -32,8 +32,8 @@ namespace tb {
 
 class DefaultProjectRunner final : public ProjectInstanceRunner {
  public:
-  explicit DefaultProjectRunner(ProjectInstanceBase* instance,
-                                ProjectTestBase* test)
+  explicit DefaultProjectRunner(
+    ProjectInstanceBase* instance, ProjectTestBase* test)
       : ProjectInstanceRunner(instance, test) {}
 
   void run() override;
@@ -58,14 +58,14 @@ void DefaultProjectRunner::run() {
 
 void DefaultProjectRunner::execute() {
   // Initialize test.
-  test_->init();
+  test_->init(instance_);
 
   // Invoke simulation.
   switch (instance_->type()) {
     case tb::ProjectInstanceBase::Type::GenericSynchronous: {
       // Generic synchronous project instance
       GenericSynchronousTest* test =
-          dynamic_cast<GenericSynchronousTest*>(test_);
+        dynamic_cast<GenericSynchronousTest*>(test_);
       if (!test) {
         // Malformed test case, not of expected type.
         throw std::runtime_error("Test is not of type GenericSynchronousTest");
@@ -81,11 +81,11 @@ void DefaultProjectRunner::execute() {
   }
 
   // Run finalization of test.
-  test_->fini();
+  test_->fini(instance_);
 }
 
 std::unique_ptr<ProjectInstanceRunner> ProjectInstanceRunner::Build(
-    Type t, ProjectInstanceBase* instance, ProjectTestBase* test) {
+  Type t, ProjectInstanceBase* instance, ProjectTestBase* test) {
   std::unique_ptr<ProjectInstanceRunner> runner;
   switch (t) {
     case Type::Default:

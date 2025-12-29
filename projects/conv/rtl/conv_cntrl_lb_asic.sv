@@ -128,14 +128,17 @@ sram_word_t                                dout;
 typedef struct packed {
   logic       dout_vld;
   logic       pop;
+  logic       eol;
 } pop_pipe_t;
 
-`P_DFFR(pop_pipe_t, pop_pipe, 2'b00, clk, arst_n);
+`P_DFFR(pop_pipe_t, pop_pipe, 3'b000, clk, arst_n);
 
 // ------------------------------------------------------------------------- //
 // SRAM skid buffer
 logic                                      skid_en;
 `P_DFFE(sram_word_t, skid, skid_en, clk);
+logic                                      skid_vld_pre;
+logic                                      skid_vld_kill;
 `P_DFFR(logic, skid_vld, 'b0, clk, arst_n);
 
 logic                                      skid_sel_en;
@@ -245,7 +248,7 @@ assign rnw = advance_pop;
 
 // ------------------------------------------------------------------------- //
 // SRAM pipelining.
-assign pop_pipe_w = '{dout_vld: advance_pop, pop: pop_i};
+assign pop_pipe_w = '{dout_vld: advance_pop, pop: pop_i, eol: eol_i};
 
 // ------------------------------------------------------------------------- //
 // SRAM instances.
@@ -272,9 +275,14 @@ assign skid_w = dout;
 
 // Skid becomes valid whenever (1) it is loaded from SRAM. It remains
 // valid when (2) stalled or when not reading the last pixel.
-assign skid_vld_w =
+assign skid_vld_pre =
     pop_pipe_r.dout_vld
   | skid_vld_r & (~pop_pipe_r.pop | ~skid_sel_r[PIXELS_PER_WORD_N - 1]);
+
+assign skid_vld_kill =
+  skid_vld_r & pop_pipe_r.pop & pop_pipe_r.eol;
+
+assign skid_vld_w = skid_vld_pre & (~skid_vld_kill);
 
 // Skid selection logic is loaded on skid enable. It is shifted
 // whenever valid and there is no stall.

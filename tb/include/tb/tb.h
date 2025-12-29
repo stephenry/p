@@ -154,8 +154,8 @@ class ProjectTestBase {
   // Design name
   virtual const std::string& args() const noexcept { return args_; }
 
-  virtual void init() {}
-  virtual void fini() {}
+  virtual void init(tb::ProjectInstanceBase* base) {}
+  virtual void fini(tb::ProjectInstanceBase* base) {}
 
  private:
   // Test arguments.
@@ -168,7 +168,7 @@ class ProjectTestBuilderBase {
   virtual ~ProjectTestBuilderBase() = default;
 
   virtual std::unique_ptr<ProjectTestBase> construct(
-      const std::string& args) const = 0;
+    const std::string& args) const = 0;
 };
 
 class ProjectBuilderBase {
@@ -180,21 +180,20 @@ class ProjectBuilderBase {
   // Design name
   virtual const std::string& name() const noexcept { return name_; }
 
-  void add_instance_builder(
-      const std::string& name,
-      std::unique_ptr<ProjectInstanceBuilderBase> builder) {
+  void add_instance_builder(const std::string& name,
+    std::unique_ptr<ProjectInstanceBuilderBase> builder) {
     instances_.emplace(name, std::move(builder));
   }
 
-  void add_test_builder(const std::string& name,
-                        std::unique_ptr<ProjectTestBuilderBase> builder) {
+  void add_test_builder(
+    const std::string& name, std::unique_ptr<ProjectTestBuilderBase> builder) {
     tests_.emplace(name, std::move(builder));
   }
 
   void finalize() {}
 
   ProjectInstanceBuilderBase* lookup_instance_builder(
-      const std::string& instance_name);
+    const std::string& instance_name);
 
   ProjectTestBuilderBase* lookup_test_builder(const std::string& test_name);
 
@@ -204,11 +203,11 @@ class ProjectBuilderBase {
 
   // Associated project instances.
   std::unordered_map<std::string, std::unique_ptr<ProjectInstanceBuilderBase>>
-      instances_;
+    instances_;
 
   // Associated project tests.
   std::unordered_map<std::string, std::unique_ptr<ProjectTestBuilderBase>>
-      tests_;
+    tests_;
 };
 
 inline class ProjectRegistry {
@@ -226,8 +225,8 @@ inline class ProjectRegistry {
 
 class ProjectInstanceRunner {
  protected:
-  explicit ProjectInstanceRunner(ProjectInstanceBase* instance,
-                                 ProjectTestBase* test)
+  explicit ProjectInstanceRunner(
+    ProjectInstanceBase* instance, ProjectTestBase* test)
       : instance_(instance), test_(test) {};
 
  public:
@@ -236,7 +235,7 @@ class ProjectInstanceRunner {
   };
 
   static std::unique_ptr<ProjectInstanceRunner> Build(
-      Type t, ProjectInstanceBase* instance, ProjectTestBase* test);
+    Type t, ProjectInstanceBase* instance, ProjectTestBase* test);
 
   virtual ~ProjectInstanceRunner() = default;
 
@@ -259,7 +258,7 @@ inline class Random {
   // Generate a random integral type in range [lo, hi]
   template <typename T>
   T uniform(T hi = std::numeric_limits<T>::max(),
-            T lo = std::numeric_limits<T>::min()) {
+    T lo = std::numeric_limits<T>::min()) {
     static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
     if constexpr (std::is_integral_v<T>) {
       // Integral type

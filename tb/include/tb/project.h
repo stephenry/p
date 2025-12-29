@@ -182,7 +182,7 @@ void GenericSynchronousProjectInstance<UUT>::run(ProjectTestBase* test) {
 
   // Run main test
   state_ = State::POST_RESET;
-  step_cycles_n(100);
+  step_cycles_n(50);
 }
 
 template <typename UUT>

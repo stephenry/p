@@ -113,7 +113,7 @@ set(PROJECT_SRCS
 
 add_library(projects STATIC ${PROJECT_SRCS})
 message(STATUS "Project libraries: ${P_PROJECT_LIBS}")
-target_link_libraries(projects ${P_PROJECT_LIBS} seqgen)
+target_link_libraries(projects ${P_PROJECT_LIBS} conv)
 target_include_directories(projects
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

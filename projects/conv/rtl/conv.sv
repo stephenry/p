@@ -179,7 +179,7 @@ endgenerate
 
 // ------------------------------------------------------------------------- //
 //
-assign m_tvalid_w = kernel_vld;
+assign m_tvalid_w = kernel_vld | (m_tvalid_r & (~m_tready_i));
 assign m_tdata_en = kernel_vld;
 assign m_tdata_w = kernel_dat_masked;
 

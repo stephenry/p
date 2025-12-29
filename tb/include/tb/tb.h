@@ -131,6 +131,8 @@ class ProjectInstanceBase {
   virtual void run(ProjectTestBase* test) {}
   virtual void finalize() {}
 
+  virtual void eval() {}
+
  private:
   // Design name.
   std::string name_;

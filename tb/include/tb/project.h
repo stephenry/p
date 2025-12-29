@@ -68,10 +68,12 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
   explicit GenericSynchronousProjectInstance(const std::string& name);
   virtual ~GenericSynchronousProjectInstance();
 
-  virtual void elaborate();
-  virtual void initialize();
-  virtual void run(ProjectTestBase* test);
-  virtual void finalize();
+  virtual void elaborate() override;
+  virtual void initialize() override;
+  virtual void run(ProjectTestBase* test) override;
+  virtual void finalize() override;
+  virtual void eval() override;
+  virtual std::size_t cycle();
 
  protected:
   virtual void set_clk(bool v) = 0;
@@ -245,6 +247,18 @@ void GenericSynchronousProjectInstance<UUT>::finalize() {
 
   // Advance state to finalized.
   state_ = State::FINALIZED;
+}
+
+template <typename UUT>
+void GenericSynchronousProjectInstance<UUT>::eval() {
+  // Call UUT finalization blocks.
+  uut_->eval();
+}
+
+template <typename UUT>
+std::size_t GenericSynchronousProjectInstance<UUT>::cycle() {
+  // Call UUT finalization blocks.
+  return uut_->tb_cycle_o;
 }
 
 }  // namespace tb

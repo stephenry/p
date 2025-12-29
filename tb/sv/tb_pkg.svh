@@ -33,6 +33,8 @@
 `undef TB_STRINGIFY
 `undef TB_STATIC_ASSERT
 `undef TB_ERROR
+`undef TB_BOILERPLATE_PORTS
+`undef TB_BOILERPLATE_BODY
 
 `else
 
@@ -51,6 +53,19 @@
     initial begin \
         tb_pkg::tb_error(`__FILE__, `__LINE__, __msg); \
     end
+
+`define TB_BOILERPLATE_PORTS \
+  , output wire logic [31:0] tb_cycle_o
+
+`define TB_BOILERPLATE_BODY(__clk, __arst) \
+    logic [31:0] tb_cycle_r; \
+    initial begin \
+        tb_cycle_r = '0; \
+    end \
+    always_ff @(posedge __clk) begin \
+        tb_cycle_r <= tb_cycle_r + 1; \
+    end \
+    assign tb_cycle_o = tb_cycle_r;
 
 `endif
 

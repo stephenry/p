@@ -98,7 +98,7 @@ dp_cntrl_t                             dp_cntrl_out;
 //                                                                           //
 // ========================================================================= //
 
-assign dp_stall = (colD_push_i == '0);
+assign dp_stall = (~colD_vld_i);
 
 assign dp_cntrl_vld_in = colD_vld_i;
 assign dp_cntrl_in = '{vld: colD_vld_i, pos: colD_pos_i};
@@ -159,7 +159,7 @@ end: kernel_dat_GEN
 //                                                                           //
 // ========================================================================= //
 
-assign kernel_vld_o = dp_cntrl_vld_out & dp_cntrl_out.vld;
+assign kernel_vld_o = (~dp_stall) & dp_cntrl_vld_out & dp_cntrl_out.vld;
 assign kernel_dat_o = kernel_dat;
 assign kernel_pos_o = dp_cntrl_out.pos;
 

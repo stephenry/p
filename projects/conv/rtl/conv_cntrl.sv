@@ -440,7 +440,9 @@ always_comb begin: kernel_colD_vld_PROC
 
 end: kernel_colD_vld_PROC
 
-assign kernel_colD_vld = kernel_colD_vld_pre & egress_pipe_out_vld_r;
+assign kernel_colD_vld =
+  kernel_colD_vld_pre & egress_pipe_out_vld_r & (~cntrl_stall);
+
 assign kernel_colD_pos = egress_pipe_out_r.pos;
 
 // Kernel column D outputs.

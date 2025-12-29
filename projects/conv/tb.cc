@@ -316,6 +316,9 @@ struct ConvTestbenchInterface {
   virtual MasterInterfaceIn m_in() const noexcept = 0;
   virtual void m_in(const MasterInterfaceIn& in) noexcept = 0;
   virtual MasterInterfaceOut<vluint8_t, 5> m_out() const noexcept = 0;
+
+  virtual void eval() = 0;
+  virtual std::size_t cycle() = 0;
 };
 
 class FrameTransactor {
@@ -393,13 +396,18 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
   virtual Frame<vluint8_t> next_frame() = 0;
 
   void on_negedge(tb::ProjectInstanceBase* instance) override {
+    ConvTestbenchInterface* intf = cast_interface(instance);
+
     // Pixel to be emitted in the current cycle.
     bool emit_pixel = true;
 
-    // Backpressure to be applied in the current cycle.
-    bool apply_backpressure = false;
-
-    ConvTestbenchInterface* intf = cast_interface(instance);
+    bool apply_backpressure = tb::RANDOM.random_bool(0.3f);
+    // Apply backpressure
+    m_in_ = MasterInterfaceIn{!apply_backpressure};
+    intf->m_in(m_in_);
+    // Combinatorial path between Master to Slave interface
+    // requires evaluation of UUT to propagate tready signal.
+    intf->eval();
 
     // Sample outputs
     s_out_ = intf->s_out();
@@ -412,7 +420,6 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
     on_negedge_internal_out(intf, apply_backpressure);
 
     // Drive new inputs
-    intf->m_in(m_in_);
     intf->s_in(s_in_);
   }
 
@@ -457,7 +464,6 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
   void on_negedge_internal_out(
     ConvTestbenchInterface* intf, bool apply_backpressure) {
     // Check Master (out) interface
-    m_in_ = MasterInterfaceIn{!apply_backpressure};
     if (!m_out_.m_tvalid || !m_in_.m_tready) {
       return;
     }
@@ -474,13 +480,13 @@ class ConvTestDriver : public tb::GenericSynchronousTest {
 
     // Otherwise, consume and validate output kernel.
     if (!equal(m_out_.m_tdata, expected_.front())) {
-      std::cout << "Mismatch detected:\n";
+      std::cout << "Mismatch detected " << std::dec << intf->cycle() << ":\n";
       std::cout << "Received:\n";
       m_out_.m_tdata.os(std::cout);
       std::cout << "Expected:\n";
       expected_.front().os(std::cout);
     } else {
-      std::cout << "Kernel match.\n";
+      std::cout << "Kernel match " << std::dec << intf->cycle() << ":\n";
       std::cout << "Received:\n";
       m_out_.m_tdata.os(std::cout);
     }
@@ -564,6 +570,12 @@ class ConvTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
     uut()->m_tready_i = tb::vsupport::to_v(in.m_tready);
   }
 
+  void eval() override { tb::GenericSynchronousProjectInstance<UUT>::eval(); }
+
+  std::size_t cycle() override {
+    return tb::GenericSynchronousProjectInstance<UUT>::cycle();
+  }
+
   explicit ConvTestbench();
   virtual ~ConvTestbench() = default;
 
@@ -602,7 +614,7 @@ class BasicIncrementConvTest final : public ConvTestDriver {
   explicit BasicIncrementConvTest(const std::string& args)
       : ConvTestDriver(args) {
     frame_gen_ = std::make_unique<FrameGenerator<vluint8_t>>(
-      8, 8, FrameGenerator<vluint8_t>::Pattern::ByRow);
+      16, 16, FrameGenerator<vluint8_t>::Pattern::ByRow);
   }
 
   Frame<vluint8_t> next_frame() override { return frame_gen_->generate(); }

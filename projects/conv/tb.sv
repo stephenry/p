@@ -106,7 +106,18 @@ module tb`TB_CFG__SUFFIX (
 
 , input wire logic                           clk
 , input wire logic                           arst_n
+
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// TB Boilerplate                                                             //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+`TB_BOILERPLATE_PORTS
 );
+
+`TB_BOILERPLATE_BODY(clk, arst_n)
 
 conv_pkg::kernel_t m_tdata;
 

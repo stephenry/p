@@ -103,6 +103,7 @@ logic [PIXELS_PER_WORD_N-2:0]               word_vld_w;
 logic [PIXELS_PER_WORD_N-2:0]               word_vld_r;
 logic [PIXELS_PER_WORD_N-1:0]               word_admit_dat;
 
+logic                                       word_is_last;
 logic                                       word_next_en;
 `P_DFFE(logic [PIXELS_PER_WORD_N-1:0], word_next, word_next_en, clk);
 logic [PIXELS_PER_WORD_N-1:0]               word_next;
@@ -159,10 +160,11 @@ logic                                      colD_en;
 
 // One-Hot pointer to the next pixel position within the SRAM word.
 //
-assign word_next_en = push_i;
-assign word_next_w = sol_i ? 'b10 : (word_next_r << 1);
+assign word_is_last = word_next_r[PIXELS_PER_WORD_N - 1] | eol_i;
 
-assign word_next = sol_i ? 'b01 : word_next_r;
+assign word_next_en = push_i;
+assign word_next_w = sol_i ? 'b10 : word_is_last ? 'b01 : (word_next_r << 1);
+assign word_next = sol_i ? 'b1 : word_next_r;
 
 // Logic to compose an SRAM word for some arbitrary word width and
 // line buffer pixel width.
@@ -183,7 +185,7 @@ if (i < (PIXELS_PER_WORD_N - 1)) begin : reg_GEN
   assign word_w[i] = dat_i;
 
   assign word_vld_w[i] = 
-     word_vld_r [i] ? (~eol_i) : word_next[i] & push_i;
+     word_vld_r [i] ? (~word_is_last) : word_next[i] & push_i;
 
 end: reg_GEN
 
@@ -222,7 +224,11 @@ assign advance_pop_pre =
   pop_i & (~skid_vld_r | skid_sel_r[PIXELS_PER_WORD_N - 1]);
 
 if (PIXELS_PER_WORD_N > 1) begin: advance_pop_multi_GEN
-  assign advance_pop = advance_pop_pre & (~pop_pipe_r.dout_vld);
+  // For multi-pixel words, only advance pop when the output
+  // of the SRAM is invalid, or, whenever the last pixel of the line
+  // is present at the output of the SRAM.
+  assign advance_pop =
+    advance_pop_pre & (pop_pipe_r.eol | ~pop_pipe_r.dout_vld);
 end: advance_pop_multi_GEN
 else begin: advance_pop_single_GEN
   assign advance_pop = advance_pop_pre;
@@ -317,7 +323,6 @@ assign colD_en = pop_i & (skid_en | skid_vld_r);
 
 // ========================================================================= //
 //                                                                           //
-// Outputs                                                                   //
 // Outputs                                                                   //
 //                                                                           //
 // ========================================================================= //

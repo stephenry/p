@@ -602,7 +602,7 @@ class BasicIncrementConvTest final : public ConvTestDriver {
   explicit BasicIncrementConvTest(const std::string& args)
       : ConvTestDriver(args) {
     frame_gen_ = std::make_unique<FrameGenerator<vluint8_t>>(
-      5, 5, FrameGenerator<vluint8_t>::Pattern::ByRow);
+      8, 8, FrameGenerator<vluint8_t>::Pattern::ByRow);
   }
 
   Frame<vluint8_t> next_frame() override { return frame_gen_->generate(); }

@@ -34,6 +34,10 @@ package seqgen_pkg;
 
 typedef logic [cfg_pkg::COORD_W - 1:0] coord_t;
 
+typedef logic [cfg_pkg::COORD_W - 1:1] pos_t;
+
+localparam int POS_W = $bits(pos_t);
+
 endpackage : seqgen_pkg
 
 `endif /* PROJECTS_SEQGEN_SEQGEN_PKG_SVH */

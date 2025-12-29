@@ -107,7 +107,6 @@ module tb`TB_CFG__SUFFIX (
 , input wire logic                           clk
 , input wire logic                           arst_n
 
-
 // -------------------------------------------------------------------------- //
 //                                                                            //
 // TB Boilerplate                                                             //

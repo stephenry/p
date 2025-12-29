@@ -25,6 +25,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+set(P_PROJECT_LIBS "")
+
 macro (generate_project)
 
     set(options )
@@ -44,7 +46,7 @@ macro (generate_project)
     )
     # Append to global project list
     message(STATUS "Adding project library: ${arg_NAME}")
-    list(APPEND P_PROJECT_LIBS "${arg_NAME}")
+    set(P_PROJECT_LIBS "${arg_NAME};${P_PROJECT_LIBS}" PARENT_SCOPE)
     message(STATUS "Current project libs: ${P_PROJECT_LIBS}")
 
     set (v_libraries "")
@@ -101,7 +103,6 @@ macro (generate_project)
 
 endmacro ()
 
-set(P_PROJECT_LIBS "")
 
 add_subdirectory(common)
 add_subdirectory(conv)
@@ -113,7 +114,7 @@ set(PROJECT_SRCS
 
 add_library(projects STATIC ${PROJECT_SRCS})
 message(STATUS "Project libraries: ${P_PROJECT_LIBS}")
-target_link_libraries(projects ${P_PROJECT_LIBS} conv)
+target_link_libraries(projects ${P_PROJECT_LIBS})
 target_include_directories(projects
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

@@ -63,7 +63,7 @@ inline struct Options {
 // clang-format off
 #define TB_PROJECT_ADD_INSTANCE(__project_class, __name,                     \
                                 __project_instance_class)                    \
-  class tb_project_add_instance_helper_##__project_class {                   \
+  class tb_project_add_instance_helper_ ##__project_class ##__name {         \
     struct InstanceBuilder : public tb::ProjectInstanceBuilderBase {         \
       std::unique_ptr<tb::ProjectInstanceBase> construct() const override {  \
         return std::unique_ptr<tb::ProjectInstanceBase>(                     \
@@ -71,11 +71,11 @@ inline struct Options {
       }                                                                      \
     };                                                                       \
    public:                                                                   \
-    explicit tb_project_add_instance_helper_##__project_class() {            \
+    explicit tb_project_add_instance_helper_##__project_class##__name() {    \
       auto p = tb::PROJECT_REGISTRY.lookup(#__project_class);                \
       p->add_instance_builder(#__name, std::make_unique<InstanceBuilder>()); \
     }                                                                        \
-  } __tb_project_add_instance_##__project_class {}
+  } __tb_project_add_instance_ ##__project_class ##__name {}
 // clang-format on
 
 // clang-format off

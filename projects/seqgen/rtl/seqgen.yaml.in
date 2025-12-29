@@ -39,7 +39,6 @@ include:
     - @CMAKE_BINARY_DIR@/projects/common/common.yaml
 
 flags:
-    - -Wall
     # TB modulename does not match filename to allow parameterization.
     - -Wno-DECLFILENAME
     # Allow explicit no-connects on module outputs.

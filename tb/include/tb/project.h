@@ -41,7 +41,7 @@ class GenericSynchronousTest : public ProjectTestBase {
   explicit GenericSynchronousTest(const std::string& args)
       : ProjectTestBase(args) {}
 
-  virtual void on_negedge(ProjectInstanceBase* instance) = 0;
+  virtual void on_negedge(ProjectInstanceBase* instance) {};
 
  public:
   virtual ~GenericSynchronousTest() = default;
@@ -82,6 +82,12 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
   // Handle to UUT
   UUT* uut() const { return uut_.get(); }
 
+  // Perform reset sequence
+  void perform_reset_sequence();
+
+  // Step n clock cycles (with ticks per cycle)
+  void step_cycles_n(std::size_t cycles_n = 1, std::size_t ticks_n = 10);
+
  private:
   bool vcd_en_{true};
 
@@ -91,12 +97,6 @@ class GenericSynchronousProjectInstance : public ProjectInstanceBase {
   void destruct_trace();
 
   void evaluate_timestep();
-
-  // Perform reset sequence
-  void perform_reset_sequence();
-
-  // Step n clock cycles (with ticks per cycle)
-  void step_cycles_n(std::size_t cycles_n = 1, std::size_t ticks_n = 10);
 
   std::unique_ptr<UUT> uut_;
   std::unique_ptr<VerilatedContext> uut_ctxt_;

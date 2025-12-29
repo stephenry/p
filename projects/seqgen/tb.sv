@@ -70,36 +70,17 @@ module tb`TB_CFG__SUFFIX (
 
 , input wire logic                           clk
 , input wire logic                           arst_n
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// TB Boilerplate                                                             //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+`TB_BOILERPLATE_PORTS
 );
 
-// ========================================================================= //
-//                                                                           //
-// Wires                                                                     //
-//                                                                           //
-// ========================================================================= //
-
-seqgen_pkg::coord_t              w_last;
-seqgen_pkg::coord_t              h_last;
-
-// ========================================================================= //
-//                                                                           //
-// Logic                                                                     //
-//                                                                           //
-// ========================================================================= //
-
-// Punt these calculations into the TB so that they do not need to be
-// calculated within the UUT. By implication, this just slightly alters
-// the interface definition of the seqgen module.
-
-// w_last is defined as (N - 2) where N is the number of elements
-// along the x-axis.
-
-assign w_last = (w_i - 'd2);
-
-// h_last is defined as (N / 2) where N is the number of elements
-// along the y-axis.
-
-assign h_last = (h_i >> 1);
+`TB_BOILERPLATE_BODY(clk, arst_n)
 
 // ========================================================================= //
 //                                                                           //
@@ -109,8 +90,8 @@ assign h_last = (h_i >> 1);
 
 seqgen uut (
   .start_i              (start_i)
-, .w_last_i             (w_last)
-, .h_last_i             (h_last)
+, .w_i                  (w_i)
+, .h_i                  (h_i)
 , .coord_y_o            (coord_y_o)
 , .coord_x_o            (coord_x_o)
 , .busy_o               (busy_o)

@@ -44,12 +44,3 @@ The environment has been specifically designed to operate within the provided [c
 BSD 2-Clause License. See file headers for full license text.
 
 Copyright (c) 2025, Stephen Henry
-
-
-
-## License
-
-BSD 2-Clause License. See file headers for full license text.
-
-Copyright (c) 2025, Stephen Henry
-

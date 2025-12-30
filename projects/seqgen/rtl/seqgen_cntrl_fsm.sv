@@ -26,8 +26,9 @@
 //========================================================================== //
 
 `include "common_defs.svh"
+`include "flops.svh"
 
-module seqgen_cntrl_pla (
+module seqgen_cntrl_fsm (
 // -------------------------------------------------------------------------- //
 //                                                                            //
 // State (In)                                                                 //
@@ -68,28 +69,101 @@ module seqgen_cntrl_pla (
 , output wire logic                         coord_x_clr_o
 , output wire logic                         coord_x_inc_o
 , output wire logic [2:0]                   coord_x_sel_o
+
+// -------------------------------------------------------------------------- //
+//                                                                            //
+// Misc.                                                                      //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
+, input wire logic                           clk
+, input wire logic                           arst_n
 );
 
-//! PLA_BEGIN
-//!
-//! .i start_i pos_r_i[1:0] is_first_x_i is_last_x_i is_first_y_i \
-//!     is_last_y_i busy_r_i done_r_i
-//!
-//! .o pos_w_o[1:0] coord_y_clr_o coord_y_inc_o coord_y_sel_o[1:0] \
-//!     coord_x_clr_o coord_x_inc_o coord_x_sel_o[2:0] busy_w_o done_w_o
-//!
-//! 1 -- -- -- - -   00 10 00 10 000 1 0
-//! 0 00 0- -- 1 0   01 00 01 00 100 1 0
-//! 0 00 11 11 1 0   11 00 01 00 001 1 0
-//! 0 11 11 11 1 0   00 00 00 00 000 0 1
-//! 0 00 10 -- 1 0   00 00 01 01 010 1 0
-//! 0 01 -0 -- 1 0   00 00 01 01 010 1 0
-//! 0 01 -1 -- 1 0   11 00 01 00 001 1 0
-//! 0 11 -1 -0 1 0   00 01 10 10 000 1 0
-//! 0 11 -1 -1 1 0   00 00 00 00 000 0 1
-//! 0 -- -- -- 0 1   00 00 00 00 000 0 1
-//!
-//! .e
-//! PLA_END
 
-endmodule: seqgen_cntrl_pla
+// ========================================================================= //
+//                                                                           //
+// Wires                                                                     //
+//                                                                           //
+// ========================================================================= //
+
+typedef enum logic [3:0] {
+    S_IDLE = 'b0000,
+    S_DONE = 'b1111
+} state_t;
+
+state_t                                state_next;
+`P_DFF(state_t, state, clk);
+
+logic                                  busy_w;
+logic                                  done_w;
+logic [1:0]                            pos_w;
+logic                                  coord_y_clr;
+logic                                  coord_y_inc;
+logic [1:0]                            coord_y_sel;
+logic                                  coord_x_clr;
+logic                                  coord_x_inc;
+logic [2:0]                            coord_x_sel;
+
+// ========================================================================= //
+//                                                                           //
+// Logic                                                                     //
+//                                                                           //
+// ========================================================================= //
+
+always_comb begin: next_state_PROC
+
+  // Defaults:
+  pos_w = 'b0;
+  coord_y_clr = 'b0;
+  coord_y_inc = 'b0;
+  coord_y_sel = 'b00;
+  coord_x_clr = 'b0;
+  coord_x_inc = 'b0;
+  coord_x_sel = 'b000;
+  busy_w = 'b0;
+  done_w = 'b0;
+
+  // State update override on start_i.
+  state_next = start_i ? S_IDLE : state_r;
+
+  case (state_next) inside
+
+    S_IDLE: begin
+
+    end
+
+    S_DONE: begin
+        done_w = 1'b1;
+        state_w = S_DONE;
+    end
+
+    default: begin
+
+    end
+
+  endcase
+
+end: next_state_PROC
+
+// ========================================================================= //
+//                                                                           //
+// Outputs                                                                   //
+//                                                                           //
+// ========================================================================= //
+
+assign busy_w_o = busy_w;
+assign done_w_o = done_w;
+assign pos_w_o = pos_w;
+assign coord_y_clr_o = coord_y_clr;
+assign coord_y_inc_o = coord_y_inc;
+assign coord_y_sel_o = coord_y_sel;
+assign coord_x_clr_o = coord_x_clr;
+assign coord_x_inc_o = coord_x_inc;
+assign coord_x_sel_o = coord_x_sel; 
+
+endmodule: seqgen_cntrl_fsm
+
+`define FLOPS_UNDEF
+`include "flops.svh"
+`undef FLOPS_UNDEF

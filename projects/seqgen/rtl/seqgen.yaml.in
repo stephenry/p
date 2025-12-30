@@ -30,6 +30,7 @@ sources:
     - @CMAKE_CURRENT_SOURCE_DIR@/seqgen.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_cntrl_case.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_cntrl_pla.sv
+    - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_cntrl_fsm.sv
     - @CMAKE_CURRENT_SOURCE_DIR@/seqgen_pkg.svh
     - @CMAKE_CURRENT_SOURCE_DIR@/cfg_pkg.svh
 

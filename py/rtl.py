@@ -25,11 +25,11 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-import argparse
 import os
 import stat
 import typing
 import re
+import tempfile
 
 class PLARenderer:
     def __init__(self, pla_region: list[str]):
@@ -40,7 +40,6 @@ class PLARenderer:
 
     def render(self) -> list[str]:
         print('Rendering PLA region...')
-        out = list()
 
         for line in self._remove_encapsulation(self._pla_region):
             if line.startswith('.i'):
@@ -56,26 +55,30 @@ class PLARenderer:
             else:
                 pass
 
-        with (open('/tmp/pla_commandfile.txt', 'w') as cf,
-              open('/tmp/pla_script.txt', 'w') as ps):
-            # Write command file
-            self._write_pla_script(cf)
-            self._write_abc_script(ps)
+        
+        with (tempfile.NamedTemporaryFile(mode='w+', delete=False) as cmdfile,
+              tempfile.NamedTemporaryFile(mode='w+', delete=False) as scriptfile,
+              tempfile.NamedTemporaryFile(delete=False) as verilogfile):
 
-            if not self._invoke_abc():
+            # Write espresso/PLA script.
+            self._write_pla_script(cmdfile)
+            cmdfile.flush()
+
+            # Write ABC script.
+            self._write_abc_script(scriptfile, cmdfile.name, verilogfile.name)
+            scriptfile.flush()
+
+            if not self._invoke_abc(scriptfile.name):
                 raise RuntimeError("ABC invocation failed.")
-            
-            self._parse_optimized_pla('/tmp/pla_optimized.sv', out)
 
-        with open('/tmp/pla_optimized.sv', 'r') as f:
-            out = self._render_verilog(f)
+            # Extract expressions from synthesized Verilog output.
+            with open(verilogfile.name, 'r') as synthesized_verilog:
+                return self._render_verilog(synthesized_verilog)
 
-        return out
-    
-    def _render_verilog(self, fin) -> list[str]:
+    def _render_verilog(self, synthesized_verilog) -> list[str]:
         out = list()
 
-        for line in fin.readlines():
+        for line in synthesized_verilog.readlines():
             if 'assign' not in line:
                 continue
 
@@ -85,7 +88,7 @@ class PLARenderer:
             for orig, repl in self._o_token_mappings:
                 line = line.replace(repl, orig)
 
-            line = line.lstrip().rstrip()
+            line = line.lstrip()
 
             out.append(line)
 
@@ -97,7 +100,7 @@ class PLARenderer:
 
         i_cube = ""
         o_cube = ""
-        for ch, in line:
+        for ch in line:
             if ch not in ['0', '1', '-']:
                 continue
 
@@ -114,7 +117,7 @@ class PLARenderer:
             if not line:
                 continue
 
-            comments_removed.append(line.lstrip('//').lstrip())
+            comments_removed.append(line.lstrip('//!').lstrip())
         
         return re.sub(r'\\\n', '', ''.join(comments_removed)).split('\n')
     
@@ -145,17 +148,17 @@ class PLARenderer:
 
         of.write(".e\n")
 
-    def _write_abc_script(self, of) -> None:
-        of.write(f"read_pla /tmp/pla_commandfile.txt\n")
-        of.write(f"write_verilog /tmp/pla_optimized.sv\n")
+    def _write_abc_script(self, scriptfile, cmdfilename, verilogfilename) -> None:
+        scriptfile.write(f"read_pla {cmdfilename}\n")
+        scriptfile.write(f"write_verilog {verilogfilename}\n")
 
-    def _invoke_abc(self) -> None:
+    def _invoke_abc(self, scriptfilename) -> None:
         import subprocess
 
         from cfg import ABC_EXE
 
         print("Invoking ABC...")
-        cp = subprocess.run([ABC_EXE, "-f", "/tmp/pla_script.txt"])
+        cp = subprocess.run([ABC_EXE, "-f", scriptfilename])
         return cp.returncode == 0
 
     def _parse_optimized_pla(self, fin: str, out: list[str]) -> None:

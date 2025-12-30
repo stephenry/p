@@ -185,7 +185,6 @@ always_comb begin: cntrl_PROC
     //
     'b0_11_11_11_1_0: ucode = 'b00__00_00__00_000__0_1;
 
-
     // A -> B
     //
     //   | x  x  x  x
@@ -233,13 +232,12 @@ always_comb begin: cntrl_PROC
     //
     'b0_11_?1_?1_1_0: ucode = 'b00__00_00__00_000__0_1; 
 
-    // Done:
+    // Done -> Done
     //
     'b0_??_??_??_0_1: ucode = 'b00__00_00__00_000__0_1;
 
-
     // Fallthrough, should never be reached.
-    default:         ucode = 'x;
+    default:          ucode = 'x;
   
   endcase
 

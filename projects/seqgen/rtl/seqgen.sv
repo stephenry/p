@@ -206,6 +206,36 @@ generate case (cfg_pkg::IMPL)
     );
   end: cntrl_case_GEN
 
+  "fsm": begin: cntrl_case_GEN
+    seqgen_cntrl_fsm u_cntrl (
+    //
+      .start_i              (start_i)
+    //
+    , .busy_r_i             (busy_r)
+    , .done_r_i             (done_r)
+    , .pos_r_i              (pos_r)
+    //
+    , .is_first_x_i         (is_first_x)
+    , .is_last_x_i          (is_last_x)
+    , .is_first_y_i         (is_first_y)
+    , .is_last_y_i          (is_last_y)
+    //
+    , .busy_w_o             (busy_w)
+    , .done_w_o             (done_w)
+    , .pos_w_o              (pos_w)
+    //
+    , .coord_x_clr_o        (coord_x_clr)
+    , .coord_x_inc_o        (coord_x_inc)
+    , .coord_x_sel_o        (coord_x_sel)
+    , .coord_y_clr_o        (coord_y_clr)
+    , .coord_y_inc_o        (coord_y_inc)
+    , .coord_y_sel_o        (coord_y_sel)
+    //
+    , .clk                  (clk)
+    , .arst_n               (arst_n)
+    );
+  end: cntrl_case_GEN
+
   default: begin
 
   end

@@ -32,6 +32,7 @@
 
 #include "tb/project.h"
 #include "v/Vtb_seqgen_case.h"
+#include "v/Vtb_seqgen_fsm.h"
 #include "v/Vtb_seqgen_pla.h"
 
 namespace {
@@ -261,6 +262,9 @@ void register_project() {
 
   // PLA implementation
   TB_PROJECT_ADD_INSTANCE(seqgen, cfg_pla, SeqGenTestbench<Vtb_seqgen_pla>);
+
+  // FSM implementation
+  TB_PROJECT_ADD_INSTANCE(seqgen, cfg_fsm, SeqGenTestbench<Vtb_seqgen_fsm>);
 
   TB_PROJECT_ADD_TEST(seqgen, generic_tester, SeqGenTestCases);
   TB_PROJECT_FINALIZE(seqgen);

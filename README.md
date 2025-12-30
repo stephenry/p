@@ -4,7 +4,7 @@ Project "P" aka "99 Projects but a job ain't one" aka "99 Projects but a boss ai
 
 ## Synopsis
 
-Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. 
+Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. There's no overarching theme, they're simply small problems specifically designed to challenge my design skills. Simulation is performed using Verilator and the verification environment is written as pseudo-UVM C++20. I have made no attempt to synthesize these designs to any particularly target or technology as I lack the tools to hand.
 
 # Projects
 
@@ -16,20 +16,27 @@ The [Conv](./projects/conv) project presents a SystemVerilog implementation of a
 - Support for backpressure across the datapath. A tricky addition which required thought when tracking position in the frame.
 - FPGA and ASIC targeted Line Buffer implementations. FPGA targets allow flexible narrow (8b) BRAM that may hold state at dout on stalls, where as typical ASIC SRAM require additional alignment and skid buffer logic.
 
-## Seqgen
+## Seqgen
 
-The [Seqgen](./project/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution used a ucode-style [control unit](./project/seqgen/rtl/seqgen_cntrl_case.sv) for optimal PPA. Additionally, a [second solution](./project/seqgen/rtl/seqgen_cntrl_pla.sv) uses the ABC Synthesis tool is used to render Espresso-style PLA logic to random-logic. This code is injected using a preprocessing stage before Verilation.
+The [Seqgen](./project/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution uses a ucode-style [control unit](./project/seqgen/rtl/seqgen_cntrl_case.sv) for optimal PPA. Additionally, a [second solution](./project/seqgen/rtl/seqgen_cntrl_pla.sv) uses the ABC Synthesis tool is used to render a Espresso-style PLA table to random-logic. This code is injected using a preprocessing stage before Verilation. A [FSM](./project/seqgen/rtl/seqgen_cntrl_fsm.sv) implementation is presented, too. Such extreme lengths (PLA-style) are unnecessary for such a small, design. Nevertheless, it's quite an interesting, non-trivial approach, and, I've got too much time on my hands.
 
 ## Notable Aspects
 
 ### Scripted Verilation
 
-Projects are defined by YAML files which are consumed by a front-end script to render and compile all Verilog sources. 
+Projects are defined by YAML files which are consumed by a front-end script to render and compile all Verilog sources. When combined with the C++20 based verification environment, rudimentary design parameterization can be achieved without the need for a full-blown Verilog preprocessor.
 
 ### Embedded PLA
 
 The open-source ABC Synthesis tool is used to convert embedded PLA blocks into SystemVerilog expressions. This allows complex look-up table and control logic to be written in an optimal and X-prop efficient manner.
 
+### C++20 Verification Environment
+
+Verilator does not have the ability to simulate UVM therefore a pseudo-UVM like environment has been written in C++20. Individual Verilated sources are compiled to static libraries and linked to the verification runtime. The overall project is styled as a standard, modern C++ project with generated sources from Verilator. Some Python is used to performed preprocessing and project management.
+
+## Usage
+
+The environment has been specifically designed to operate within the provided Container. All necessary tools (at fixed versions) are provided and configuration scripts are designs to search known locations in the filesystem for appropriate tools. The work/project is not designed for general consumption so no detailed instructions are provided.
 
 ## License
 

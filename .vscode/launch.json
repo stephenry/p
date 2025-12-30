@@ -11,7 +11,7 @@
                 "--project",
                 "seqgen",
                 "--instance",
-                "cfg_case",
+                "cfg_pla",
                 "--test",
                 "generic_tester",
                 "--args",

@@ -50,7 +50,7 @@ class PLARenderer:
             elif line.startswith('.e'):
                 pass
             elif '0' in line or '1' in line or '-' in line:
-                self._terms.append(line)
+                self._process_cube(line)
             elif not line:
                 pass
             else:
@@ -67,7 +67,46 @@ class PLARenderer:
             
             self._parse_optimized_pla('/tmp/pla_optimized.sv', out)
 
+        with open('/tmp/pla_optimized.sv', 'r') as f:
+            out = self._render_verilog(f)
+
         return out
+    
+    def _render_verilog(self, fin) -> list[str]:
+        out = list()
+
+        for line in fin.readlines():
+            if 'assign' not in line:
+                continue
+
+            for orig, repl in self._i_token_mappings:
+                line = line.replace(repl, orig)
+
+            for orig, repl in self._o_token_mappings:
+                line = line.replace(repl, orig)
+
+            line = line.lstrip().rstrip()
+
+            out.append(line)
+
+        return out
+
+    def _process_cube(self, line: str) -> None:
+        i_n = len(self._i_token_mappings)
+        o_n = len(self._o_token_mappings)
+
+        i_cube = ""
+        o_cube = ""
+        for ch, in line:
+            if ch not in ['0', '1', '-']:
+                continue
+
+            if len(i_cube) < len(self._i_token_mappings):
+                i_cube += ch
+            else:
+                o_cube += ch
+        
+        self._terms.append((i_cube, o_cube))
     
     def _remove_encapsulation(self, lines: list[str]) -> list[str]:
         comments_removed = list()
@@ -101,8 +140,8 @@ class PLARenderer:
         of.write(f'.ob {outs}\n')
 
         # Write script
-        for term in self._terms:
-            of.write(f"{term}\n")
+        for i_cube, o_cube in self._terms:
+            of.write(f"{i_cube} {o_cube}\n")
 
         of.write(".e\n")
 

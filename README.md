@@ -18,7 +18,7 @@ The [Conv](./projects/conv) project presents a SystemVerilog implementation of a
 
 ## Seqgen
 
-The [Seqgen](./project/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution uses a ucode-style [control unit](./project/seqgen/rtl/seqgen_cntrl_case.sv) for optimal PPA. Additionally, a [second solution](./project/seqgen/rtl/seqgen_cntrl_pla.sv) uses the ABC Synthesis tool is used to render a Espresso-style PLA table to random-logic. This code is injected using a preprocessing stage before Verilation. A [FSM](./project/seqgen/rtl/seqgen_cntrl_fsm.sv) implementation is presented, too. Such extreme lengths (PLA-style) are unnecessary for such a small, design. Nevertheless, it's quite an interesting, non-trivial approach, and, I've got too much time on my hands.
+The [Seqgen](./projects/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution uses a ucode-style [control unit](./projects/seqgen/rtl/seqgen_cntrl_case.sv) for optimal PPA. Additionally, a [second solution](./projects/seqgen/rtl/seqgen_cntrl_pla.sv) uses the ABC Synthesis tool is used to render a Espresso-style PLA table to random-logic. This code is injected using a preprocessing stage before Verilation. A [FSM](./projects/seqgen/rtl/seqgen_cntrl_fsm.sv) implementation is presented, too. Such extreme lengths (PLA-style) are unnecessary for such a small, design. Nevertheless, it's quite an interesting, non-trivial approach, and, I've got too much time on my hands.
 
 ## Notable Aspects
 

@@ -1,169 +1,43 @@
-# P - Hardware Verification Framework
+# Project - "P"
 
-A hardware verification framework for SystemVerilog RTL designs using Verilator-based simulation and C++ testbenches.
+Project "P" aka "99 Projects but a job ain't one" aka "99 Projects but a boss ain't one" aka "Steve, you've really got too much time on your hands!"
 
-## Overview
+## Synopsis
 
-This project provides a CMake-based build system for developing and testing hardware designs written in SystemVerilog. It uses Verilator to convert SystemVerilog RTL into C++ models, which are then verified using C++ testbenches.
+Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. 
 
-### Current Projects
+# Projects
 
-- **conv**: A convolution operation module for streaming data processing
-  - Supports multiple configurations (ASIC/FPGA targets, zero-padding strategies)
-  - Implements kernel-based convolution on pixel streams
+## Conv 
 
-## Prerequisites
+The [Conv](./projects/conv) project presents a SystemVerilog implementation of a 5x5 convolution filter for an arbitrary sized image. Notable aspects of the project include: 
 
-### Required Dependencies
+- Frame dimensions are not hardcoded into logic and are instead derived from an AXI-Stream style interface. The definition of the interface made calculation of the relative position within the frame, required to compute appropriate masking, non-trivial to calculate.
+- Support for backpressure across the datapath. A tricky addition which required thought when tracking position in the frame.
+- FPGA and ASIC targeted Line Buffer implementations. FPGA targets allow flexible narrow (8b) BRAM that may hold state at dout on stalls, where as typical ASIC SRAM require additional alignment and skid buffer logic.
 
-- **CMake** (>= 3.22)
-- **Verilator**: Hardware simulation tool
-  - Set `VERILATOR_ROOT` environment variable to your Verilator installation
-- **Python 3**: For RTL compilation scripts
-- **C++ Compiler**: Supporting C++20 standard (GCC >= 10, Clang >= 10, or MSVC >= 19.29)
-- **PyYAML**: Python package (automatically installed in virtual environment)
+## Seqgen
 
-### Environment Setup
+The [Seqgen](./project/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution used a ucode-style [control unit](./project/seqgen/rtl/seqgen_cntrl_case.sv) for optimal PPA. Additionally, a [second solution](./project/seqgen/rtl/seqgen_cntrl_pla.sv) uses the ABC Synthesis tool is used to render Espresso-style PLA logic to random-logic. This code is injected using a preprocessing stage before Verilation.
 
-**Option 1: Using Dev Container (Recommended)**
+## Notable Aspects
 
-This project includes a VS Code dev container configuration with all dependencies pre-installed:
+### Scripted Verilation
 
-1. Open the project in VS Code
-2. Install the "Dev Containers" extension
-3. Click "Reopen in Container" when prompted
-4. The container includes Verilator, CMake, Python 3, and all required tools
+Projects are defined by YAML files which are consumed by a front-end script to render and compile all Verilog sources. 
 
-**Option 2: Manual Setup**
+### Embedded PLA
 
-Export the Verilator installation path:
+The open-source ABC Synthesis tool is used to convert embedded PLA blocks into SystemVerilog expressions. This allows complex look-up table and control logic to be written in an optimal and X-prop efficient manner.
 
-```bash
-export VERILATOR_ROOT=/path/to/verilator
-```
 
-## Building the Project
+## License
 
-### Configure
+BSD 2-Clause License. See file headers for full license text.
 
-```bash
-mkdir build
-cd build
-cmake ..
-```
+Copyright (c) 2025, Stephen Henry
 
-This will:
-- Detect Verilator installation
-- Create a Python virtual environment in `build/.venv`
-- Install required Python dependencies (PyYAML)
 
-### Build
-
-```bash
-cmake --build .
-```
-
-The build process:
-1. Renders RTL from SystemVerilog sources using Python scripts
-2. Runs Verilator to generate C++ models from SystemVerilog
-3. Compiles C++ testbenches and links them with Verilated models
-
-### Options
-
-- **VCD Tracing**: Enable waveform generation
-  ```bash
-  cmake -DOPT_VCD_ENABLE=ON ..
-  ```
-
-## Running Tests
-
-After building, run the test suite:
-
-```bash
-ctest
-```
-
-Or run tests with verbose output:
-
-```bash
-ctest --verbose
-```
-
-Run specific test executables directly:
-
-```bash
-./test/main
-```
-
-## Project Structure
-
-```
-.
-├── CMakeLists.txt          # Top-level build configuration
-├── cmake/                  # CMake modules
-│   ├── FindVerilatorPkg.cmake  # Verilator detection and setup
-│   └── SetupVenv.cmake         # Python virtual environment setup
-├── projects/               # Hardware projects
-│   ├── common/            # Common/shared RTL components
-│   └── conv/              # Convolution module
-│       ├── rtl/           # SystemVerilog source files
-│       ├── tb.cc          # C++ testbench
-│       └── CMakeLists.txt # Project build configuration
-├── py/                    # Python RTL compilation tools
-│   ├── rtl.py            # RTL processing and Verilator invocation
-│   ├── compile.py.in     # RTL compilation entry point
-│   └── requirements.txt  # Python dependencies
-├── tb/                    # Testbench library
-│   ├── include/tb/       # C++ testbench headers
-│   ├── src/              # C++ testbench implementation
-│   └── sv/               # SystemVerilog testbench components
-└── test/                  # Test driver
-    └── main.cc           # Test entry point
-```
-
-## Adding New Projects
-
-To add a new hardware project:
-
-1. Create a project directory under `projects/`
-2. Add RTL sources in a `rtl/` subdirectory
-3. Create a YAML configuration file (e.g., `project.yaml.in`) specifying:
-   - Top module name
-   - Source file list
-   - Include dependencies
-   - Preprocessor defines
-4. Create a C++ testbench (`tb.cc`)
-5. Add a `CMakeLists.txt` using the `generate_project()` macro:
-
-```cmake
-generate_project(
-    NAME my_project
-    YAML_IN ${CMAKE_CURRENT_SOURCE_DIR}/config.yaml.in
-    CC_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/tb.cc
-)
-```
-
-## YAML Configuration
-
-Project YAML files define the RTL compilation parameters:
-
-```yaml
-# Top-level module name for Verilator
-top: my_top_module
-
-# SystemVerilog source files
-sources:
-    - path/to/source1.sv
-    - path/to/source2.sv
-
-# Include other YAML configurations
-include:
-    - path/to/common.yaml
-
-# Preprocessor defines
-defines:
-    MY_DEFINE: value
-```
 
 ## License
 

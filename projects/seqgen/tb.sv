@@ -82,6 +82,12 @@ module tb`TB_CFG__SUFFIX (
 
 `TB_BOILERPLATE_BODY(clk, arst_n)
 
+seqgen_pkg::coord_t w_last, h_last;
+
+assign w_last = w_i - 'd1;
+
+assign h_last = h_i - 'd1;
+
 // ========================================================================= //
 //                                                                           //
 // UUT                                                                       //
@@ -90,8 +96,8 @@ module tb`TB_CFG__SUFFIX (
 
 seqgen uut (
   .start_i              (start_i)
-, .w_i                  (w_i)
-, .h_i                  (h_i)
+, .w_i                  (w_last)
+, .h_i                  (h_last)
 , .coord_y_o            (coord_y_o)
 , .coord_x_o            (coord_x_o)
 , .busy_o               (busy_o)

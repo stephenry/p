@@ -27,3 +27,6 @@
 
 # Path to Verilator executable
 VERILATOR_EXE = '@VERILATOR_EXE@'
+
+# Path ABC synthesis tool
+ABC_EXE = '@ABC_EXE@'

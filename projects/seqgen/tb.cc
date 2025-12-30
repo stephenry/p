@@ -191,8 +191,8 @@ class SeqGenTestbench final : public tb::GenericSynchronousProjectInstance<UUT>,
   // Ports
   void start(bool v) noexcept { this->uut()->start_i = tb::vsupport::to_v(v); }
   void last(const TestCase& tc) noexcept {
-    this->uut()->w_i = tc.coord_y;
-    this->uut()->h_i = tc.coord_x;
+    this->uut()->w_i = tc.coord_x;
+    this->uut()->h_i = tc.coord_y;
   }
   Coord coord() const noexcept {
     Coord c{};
@@ -234,7 +234,12 @@ class SeqGenTestCases final : public SeqGenTestCasesBase {
  public:
   explicit SeqGenTestCases(const std::string& args)
       : SeqGenTestCasesBase(args) {
-    test_cases_ = {{"3x3", 3, 3}, {"4x4", 4, 4}, {"7x7", 7, 7}};
+    test_cases_ = {{"2x1", 2, 1},
+      {"2x2", 2, 2},
+      {"4x3", 4, 3},
+      {"6x4", 6, 4},
+      {"8x7", 8, 7}};
+
     for (const TestCase& tc : test_cases_) {
       add_testcase(tc);
     }

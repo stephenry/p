@@ -29,6 +29,99 @@ import argparse
 import os
 import stat
 import typing
+import re
+
+class PLARenderer:
+    def __init__(self, pla_region: list[str]):
+        self._i_token_mappings = list()
+        self._o_token_mappings = list()
+        self._terms = list()
+        self._pla_region = pla_region
+
+    def render(self) -> list[str]:
+        print('Rendering PLA region...')
+        out = list()
+
+        for line in self._remove_encapsulation(self._pla_region):
+            if line.startswith('.i'):
+                self._process_directive(line, self._i_token_mappings)
+            elif line.startswith('.o'):
+                self._process_directive(line, self._o_token_mappings)
+            elif line.startswith('.e'):
+                pass
+            elif '0' in line or '1' in line or '-' in line:
+                self._terms.append(line)
+            elif not line:
+                pass
+            else:
+                pass
+
+        with (open('/tmp/pla_commandfile.txt', 'w') as cf,
+              open('/tmp/pla_script.txt', 'w') as ps):
+            # Write command file
+            self._write_pla_script(cf)
+            self._write_abc_script(ps)
+
+            if not self._invoke_abc():
+                raise RuntimeError("ABC invocation failed.")
+            
+            self._parse_optimized_pla('/tmp/pla_optimized.sv', out)
+
+        return out
+    
+    def _remove_encapsulation(self, lines: list[str]) -> list[str]:
+        comments_removed = list()
+        for line in lines:
+            if not line:
+                continue
+
+            comments_removed.append(line.lstrip('//').lstrip())
+        
+        return re.sub(r'\\\n', '', ''.join(comments_removed)).split('\n')
+    
+    def _process_directive(self, line: str, mappings) -> None:
+        tokens = line.split()
+        for token in tokens[1:]:
+            if m := re.match(r'(\w+)\[(\d+):(\d+)\]', token):
+                name, msb, lsb = m.groups()
+                for k in reversed(range(int(lsb), int(msb)+1)):
+                    mappings.append((f'{name}[{k}]', f'{name}_{k}'))
+            else:
+                mappings.append((token, token))
+
+    def _write_pla_script(self, of) -> None:
+        # Write command file
+        of.write(f'.i {len(self._i_token_mappings)}\n')
+        of.write(f'.o {len(self._o_token_mappings)}\n')
+
+        ins = " ".join([ m[1] for m in self._i_token_mappings ])
+        of.write(f".ilb {ins}\n")
+
+        outs = " ".join([ m[1] for m in self._o_token_mappings ])
+        of.write(f'.ob {outs}\n')
+
+        # Write script
+        for term in self._terms:
+            of.write(f"{term}\n")
+
+        of.write(".e\n")
+
+    def _write_abc_script(self, of) -> None:
+        of.write(f"read_pla /tmp/pla_commandfile.txt\n")
+        of.write(f"write_verilog /tmp/pla_optimized.sv\n")
+
+    def _invoke_abc(self) -> None:
+        import subprocess
+
+        from cfg import ABC_EXE
+
+        print("Invoking ABC...")
+        cp = subprocess.run([ABC_EXE, "-f", "/tmp/pla_script.txt"])
+        return cp.returncode == 0
+
+    def _parse_optimized_pla(self, fin: str, out: list[str]) -> None:
+        pass
+
 
 
 class Verilator:
@@ -51,7 +144,7 @@ class Verilator:
             print("No VC_F changes detected; skipping Verilation.")
             return 
 
-        # Destroy all pre-verilated
+         #Destroy all pre-verilated
         if os.path.exists(self._vout_dir):
             import shutil
             shutil.rmtree(self._vout_dir)
@@ -211,7 +304,25 @@ class RTLRenderer:
     def _render_file(self, fin: str, fout: str) -> None:
         print(f"Rendering RTL: {fin} to {fout}")
         with (open(fout, 'w') as o, open(fin, 'r') as i):
-            o.write(i.read())
+
+            out_render = list()
+            in_pla_region = False
+            pla_region = list()
+            for line in i.readlines():
+                if re.search(r'PLA_END', line):
+                    print("End PLA region.")
+                    in_pla_region = False
+                    out_render.extend(PLARenderer(pla_region).render())              
+                elif in_pla_region:
+                    pla_region.append(line)
+                elif re.search(r'PLA_BEGIN', line):
+                    print("Found PLA region...")
+                    in_pla_region = True
+
+                else:
+                    out_render.append(line)
+            
+            o.write("".join(out_render))
 
         if False:
             os.chmod(fout, stat.S_IREAD)

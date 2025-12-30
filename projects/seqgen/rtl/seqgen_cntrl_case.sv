@@ -38,7 +38,7 @@ module seqgen_cntrl_case (
 
 , input wire logic                          busy_r_i
 , input wire logic                          done_r_i
-, input wire logic                          pos_r_i
+, input wire logic [1:0]                    pos_r_i
 
 , input wire logic                          is_first_x_i
 , input wire logic                          is_last_x_i
@@ -54,7 +54,7 @@ module seqgen_cntrl_case (
 
 , output wire logic                         busy_w_o
 , output wire logic                         done_w_o
-, output wire logic                         pos_w_o
+, output wire logic [1:0]                   pos_w_o
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -63,10 +63,11 @@ module seqgen_cntrl_case (
 // -------------------------------------------------------------------------- //
 
 , output wire logic                         coord_y_clr_o
-, output wire logic                         coord_y_upt_o
+, output wire logic                         coord_y_inc_o
+, output wire logic [1:0]                   coord_y_sel_o
 , output wire logic                         coord_x_clr_o
-, output wire logic                         coord_x_upt_o
-, output wire logic [3:0]                   coord_x_sel_o
+, output wire logic                         coord_x_inc_o
+, output wire logic [2:0]                   coord_x_sel_o
 );
 
 // ========================================================================= //
@@ -76,9 +77,45 @@ module seqgen_cntrl_case (
 // ========================================================================= //
 
 typedef struct packed {
+    // Y position
+    logic [1:0]       pos;
+
+    // Y
+    //
+    logic             y_clr;
+    logic             y_inc;
+    
+    //  1: Inc Y
+    //
+    //  0: Curr Y
+    // 
+    logic [1:0]       y_sel;
+
+    // X
+    //  
+    logic             x_clr;
+    logic             x_inc;
+
+    // 2: Prior X
+    //
+    // 1: Inc X
+    //
+    // 0: Curr X
+    //
+    logic [2:0]       x_sel;
+
+
+    // Status:
+    logic             busy;
+    logic             done;
+} ucode_t;
+
+ucode_t                                ucode;
+
+typedef struct packed {
     logic             start;
 
-    logic             pos;
+    logic [1:0]       pos;
 
     logic             is_first_x;
     logic             is_last_x;
@@ -91,23 +128,6 @@ typedef struct packed {
 } state_t;
 
 state_t                                state;
-
-typedef struct packed {
-    logic             pos;
-
-    logic             y_clr;
-    logic             y_upt;
-
-    logic             x_clr;
-    logic             x_upt;
-    logic [3:0]       x_sel;
-
-    logic             busy;
-
-    logic             done;
-} ucode_t;
-
-ucode_t                                ucode;
 
 // ========================================================================= //
 //                                                                           //
@@ -132,17 +152,91 @@ assign state = '{
 
 always_comb begin: cntrl_PROC
 
-
     case (state) inside
 
-    // Start:
-    'b1_?_??_??_?_?: ucode = 'b0_00_00_1000_1_0;
+    // Idle -> A
+    //
+    'b1_??_??_??_?_?: ucode = 'b00__10_00__10_000__1_0;
 
-    // End:
-    'b0_?_??_??_?_1: ucode = 'b0_00_00_0000_0_1;
+    // A -> E
+    //
+    //   x  x  x  x
+    //   x  x  A  B
+    //   x  E  C  D
+    //   x  x  x  x
+    //
+    'b0_00_0?_??_1_0: ucode = 'b01__00_01__00_100__1_0;
 
-    // Reset:
-    'b0_?_??_??_0_0: ucode = 'b0_00_00_000_0_0;
+    // A -> C
+    //
+    //   +---+
+    //   | A |
+    //   | C |
+    //   +---+
+    //
+    'b0_00_11_11_1_0: ucode = 'b11__00_01__00_001__1_0;
+
+    // C -> Done
+    //
+    //   +---+
+    //   | A |
+    //   | C |
+    //   +---+
+    //
+    'b0_11_11_11_1_0: ucode = 'b00__00_00__00_000__0_1;
+
+
+    // A -> B
+    //
+    //   | x  x  x  x
+    //   | A  B  x  x
+    //   | C  D  x  x
+    //   | x  x  x  x
+    //
+    'b0_00_10_??_1_0: ucode = 'b00__00_01__01_010__1_0;
+
+    // E -> B
+    //
+    //   x  x  x  x  x
+    //   x  x  A  B  x
+    //   x  E  C  D  x
+    //   x  x  x  x  x
+    //
+    'b0_01_?0_??_1_0: ucode = 'b00__00_01__01_010__1_0;
+
+    // C -> D
+    //
+    //   x  x  x  x |
+    //   x  x  A  B |
+    //   x  x  C  D |
+    //   x  x  x  x |
+    //
+    'b0_01_?1_??_1_0: ucode = 'b11__00_01__00_001__1_0;
+
+    // D -> A'
+    //
+    //  | x  x  x  x |
+    //  | x  x  A  B |
+    //  | x  E  C  D |
+    //  | A' B' x  x |
+    //  | C' D' x  x |
+    //  | x  x  x  x |
+    //
+    'b0_11_?1_?0_1_0: ucode = 'b00__01_10__10_000__1_0;
+
+    // D -> Done
+    //
+    //  | x  x  x  x |
+    //  | x  x  A  B |
+    //  | x  x  C  D |
+    //  +------------+
+    //
+    'b0_11_?1_?1_1_0: ucode = 'b00__00_00__00_000__0_1; 
+
+    // Done:
+    //
+    'b0_??_??_??_0_1: ucode = 'b00__00_00__00_000__0_1;
+
 
     // Fallthrough, should never be reached.
     default:         ucode = 'x;
@@ -162,9 +256,10 @@ assign busy_w_o = ucode.busy;
 assign done_w_o = ucode.done;
 
 assign coord_y_clr_o = ucode.y_clr;
-assign coord_y_upt_o = ucode.y_upt;
+assign coord_y_inc_o = ucode.y_inc;
+assign coord_y_sel_o = ucode.y_sel;
 assign coord_x_clr_o = ucode.x_clr;
-assign coord_x_upt_o = ucode.x_upt;
+assign coord_x_inc_o = ucode.x_inc;
 assign coord_x_sel_o = ucode.x_sel;
 
 endmodule: seqgen_cntrl_case

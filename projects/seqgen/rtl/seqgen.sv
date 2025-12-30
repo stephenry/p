@@ -107,7 +107,7 @@ module seqgen (
 
 // Control
 //
-`P_DFF(logic, pos, clk);
+`P_DFF(logic [1:0], pos, clk);
 `P_DFFR(logic, busy, 1'b0, clk, arst_n);
 `P_DFFR(logic, done, 1'b0, clk, arst_n);
 
@@ -120,18 +120,22 @@ logic                                   is_last_y;
 // Output flops
 //
 logic                                   coord_x_clr;
-logic                                   coord_x_upt;
-seqgen_pkg::coord_t                     coord_x_inc;
+logic                                   coord_x_inc;
+seqgen_pkg::coord_t                     coord_x_inc_out;
 `P_DFF(seqgen_pkg::coord_t, coord_x, clk);
 `P_DFF(seqgen_pkg::coord_t, coord_x_prior, clk);
 `P_DFF(seqgen_pkg::coord_t, coord_x_out, clk);
 
-seqgen_pkg::coord_t [3:0]               coord_x;
-logic [3:0]                             coord_x_sel;
+seqgen_pkg::coord_t [2:0]               coord_x;
+logic [2:0]                             coord_x_sel;
+
+seqgen_pkg::pos_t [1:0]                 coord_y;
+logic [1:0]                             coord_y_sel;
 logic                                   coord_y_clr;
-logic                                   coord_y_upt;
-seqgen_pkg::pos_t                       coord_y_inc;
+logic                                   coord_y_inc;
+seqgen_pkg::pos_t                       coord_y_inc_out;
 `P_DFF(seqgen_pkg::pos_t, coord_y, clk);
+`P_DFF(seqgen_pkg::pos_t, coord_y_out, clk);
 
 // Tie-offs
 logic                                   coord_x_co;
@@ -149,7 +153,6 @@ logic                                   coord_y_co;
 generate case (cfg_pkg::IMPL)
 
   "pla": begin: cntrl_pla_GEN
-  /*
     seqgen_cntrl_pla u_cntrl (
     //
       .start_i              (start_i)
@@ -168,11 +171,12 @@ generate case (cfg_pkg::IMPL)
     , .pos_w_o              (pos_w)
     //
     , .coord_x_clr_o        (coord_x_clr)
-    , .coord_x_upt_o        (coord_x_upt)
+    , .coord_x_inc_o        (coord_x_inc)
+    , .coord_x_sel_o        (coord_x_sel)
     , .coord_y_clr_o        (coord_y_clr)
-    , .coord_y_upt_o        (coord_y_upt)
+    , .coord_y_inc_o        (coord_y_inc)
+    , .coord_y_sel_o        (coord_y_sel)
     );
-    */
   end: cntrl_pla_GEN
 
   "case": begin: cntrl_case_GEN
@@ -194,10 +198,11 @@ generate case (cfg_pkg::IMPL)
     , .pos_w_o              (pos_w)
     //
     , .coord_x_clr_o        (coord_x_clr)
-    , .coord_x_upt_o        (coord_x_upt)
+    , .coord_x_inc_o        (coord_x_inc)
     , .coord_x_sel_o        (coord_x_sel)
     , .coord_y_clr_o        (coord_y_clr)
-    , .coord_y_upt_o        (coord_y_upt)
+    , .coord_y_inc_o        (coord_y_inc)
+    , .coord_y_sel_o        (coord_y_sel)
     );
   end: cntrl_case_GEN
 
@@ -211,29 +216,36 @@ endgenerate
 // X-axis
 
 inc #(.W(cfg_pkg::COORD_W)) u_inc_x (
-  .x_i(coord_x_r), .y_o(coord_x_inc), .carry_o(coord_x_co));
+  .x_i(coord_x_r), .y_o(coord_x_inc_out), .carry_o(coord_x_co));
 
-assign coord_x_prior_w = coord_x_upt ? coord_x_r : coord_x_prior_r;
+assign coord_x_w = coord_x_clr ? '0 : (coord_x_inc ? coord_x_inc_out : coord_x_r);
 
-assign coord_x[3] = '0;
+assign coord_x_prior_w = coord_x_inc ? coord_x_r : coord_x_prior_r;
+
 assign coord_x[2] = coord_x_prior_r;
-assign coord_x[1] = coord_x_inc;
+assign coord_x[1] = coord_x_inc_out;
 assign coord_x[0] = coord_x_r;
 
-mux #(.N(4), .W(cfg_pkg::COORD_W)) u_mux_coord_x (
+mux #(.N(3), .W(cfg_pkg::COORD_W)) u_mux_coord_x (
   .x_i(coord_x), .sel_i(coord_x_sel), .y_o(coord_x_out_w));
-
-assign coord_x_w = (coord_x_clr ? '0 : (coord_x_upt ? coord_x_inc : coord_x_r));
-
-assign is_first_x = (coord_x_r == '0);
-assign is_last_x = (coord_x_inc == w_i);
 
 // Y-axis
 
 inc #(.W(seqgen_pkg::POS_W)) u_inc_y (
-  .x_i(coord_y_r), .y_o(coord_y_inc), .carry_o(coord_y_co));
+  .x_i(coord_y_r), .y_o(coord_y_inc_out), .carry_o(coord_y_co));
 
-assign coord_y_w = (coord_y_clr ? '0 : (coord_y_upt ? coord_y_inc : coord_y_r));
+assign coord_y_w = coord_y_clr ? '0 : (coord_y_inc ? coord_y_inc_out : coord_y_r);
+
+assign coord_y[1] = coord_y_inc_out;
+assign coord_y[0] = coord_y_r;
+
+mux #(.N(2), .W(seqgen_pkg::POS_W)) u_mux_coord_y (
+  .x_i(coord_y), .sel_i(coord_y_sel), .y_o(coord_y_out_w));
+
+// Position
+
+assign is_first_x = (coord_x_r == '0);
+assign is_last_x = (coord_x_r == w_i);
 
 assign is_first_y = (coord_y_r == '0);
 assign is_last_y = ({coord_y_r, 1'b1} == h_i);
@@ -244,7 +256,7 @@ assign is_last_y = ({coord_y_r, 1'b1} == h_i);
 //                                                                           //
 // ========================================================================= //
 
-assign coord_y_o = {coord_y_r, pos_r};
+assign coord_y_o = {coord_y_out_r, pos_r[0]};
 assign coord_x_o = coord_x_out_r;
 
 assign busy_o = busy_r;

@@ -30,6 +30,8 @@ project(p)
 
 include(${CMAKE_SOURCE_DIR}/cmake/FindVerilatorPkg.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/SetupVenv.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/FindABC.cmake)
+
 
 option(OPT_VCD_ENABLE "Enable Verilated module tracing" FALSE)
 

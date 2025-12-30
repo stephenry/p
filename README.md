@@ -4,7 +4,7 @@ Project "P" aka "99 Projects but a job ain't one" aka "99 Projects but a boss ai
 
 ## Synopsis
 
-Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. There's no overarching theme, they're simply small problems specifically designed to challenge my design skills. Simulation is performed using Verilator and the verification environment is written as pseudo-UVM C++20. I have made no attempt to synthesize these designs to any particularly target or technology as I lack the tools to hand.
+Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. There's no overarching theme, they're simply small problems specifically designed to challenge my design skills. Simulation is performed using Verilator and the verification environment is written as pseudo-UVM C++20. I have made no attempt to synthesize these designs to any particularly target or technology as I lack the tools to hand. The longterm goal of the repo. is to grow the number of projects over time.
 
 # Projects
 
@@ -37,7 +37,7 @@ Verilator does not have the ability to simulate UVM therefore a pseudo-UVM like 
 
 ## Usage
 
-The environment has been specifically designed to operate within the provided Container. All necessary tools (at fixed versions) are provided and configuration scripts are designs to search known locations in the filesystem for appropriate tools. The work/project is not designed for general consumption so no detailed instructions are provided.
+The environment has been specifically designed to operate within the provided [container](./.devcontainer/Dockerfile). All necessary tools (at fixed versions) are provided and configuration scripts are designs to search known locations in the filesystem for appropriate tools. The work/project is not designed for general consumption so no detailed instructions are provided.
 
 ## License
 

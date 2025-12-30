@@ -14,7 +14,7 @@ The [Conv](./projects/conv) project presents a SystemVerilog implementation of a
 
 - Frame dimensions are not hardcoded into logic and are instead derived from an AXI-Stream style interface. The definition of the interface made calculation of the relative position within the frame, required to compute appropriate masking, non-trivial to calculate.
 - Support for backpressure across the datapath. A tricky addition which required consideration when tracking position in the frame (no pipeline bubbles are allowed).
-- FPGA and ASIC targeted Line Buffer implementations. FPGA targets allow flexible, narrow (8b) BRAM that may hold state at dout over multiple cycles, whereas typical ASIC SRAM macro require additional alignment, skid buffer logic, and typically lose their state at dout after the read cycle. In the context of an ASIC, Line Buffers would typically be realized using flops, but an SRAM implemenation (although overkill) is more complex to implement, which is the objective of this exercise.
+- FPGA and ASIC targeted Line Buffer implementations. FPGA targets allow flexible, narrow (8b) BRAM that may hold state at dout over multiple cycles, whereas typical ASIC SRAM macro require additional alignment, skid buffer logic, and lose their state at dout after the read cycle. In the context of an ASIC, Line Buffers would typically be realized using flops, but an SRAM implemenation (although overkill) is more complex to implement, which is the objective of this exercise.
 - RTL is standardized on an ASIC-style asynchronous, active-low reset strategy. FPGA implementations typically prefer synchronous resets. The RTL is trivial to modify as necessary, but I have not done so.
 
 ## Seqgen

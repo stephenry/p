@@ -25,6 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`include "asserts.svh"
 `include "common_defs.svh"
 `include "conv_pkg.svh"
 `include "flops.svh"
@@ -307,10 +308,16 @@ assign lb_dat = pixel0_data_r;
 assign lb_sol = pixel0_pos_r.w2;
 assign lb_eol = pixel0_pos_r.e2;
 
+// Push upto one back per cycle.
+`P_ASSERT_CR(clk, arst_n, $onehot0(lb_push));
+
 // ------------------------------------------------------------------------- //
 // Line Buffer Pop Control.
 
 assign lb_pop = (lb_push != '0) ? (row_vld_r & ~bank_push_sel_r) : 5'b00000;
+
+// May not pop from a bank that is not being pushed to.
+`P_ASSERT_CR(clk, arst_n, (lb_push & lb_pop) == 'b0);
 
 // ------------------------------------------------------------------------- //
 // Line Buffer Instantiation.
@@ -440,6 +447,8 @@ always_comb begin: kernel_colD_vld_PROC
 
 end: kernel_colD_vld_PROC
 
+`P_ASSERT_CR(clk, arst_n, $onehot0(egress_pipe_out_r.push));
+
 assign kernel_colD_vld =
   kernel_colD_vld_pre & egress_pipe_out_vld_r & (~cntrl_stall);
 
@@ -467,3 +476,7 @@ endmodule : conv_cntrl
 `define FLOPS_UNDEF
 `include "flops.svh"
 `undef FLOPS_UNDEF
+
+`define ASSERTS_UNDEF
+`include "asserts.svh"
+`undef ASSERTS_UNDEF

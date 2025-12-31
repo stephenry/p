@@ -25,6 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`include "asserts.svh"
 `include "common_defs.svh"
 `include "conv_pkg.svh"
 `include "flops.svh"
@@ -68,9 +69,9 @@ module conv_cntrl_lb_asic (
 //                                                                           //
 // ========================================================================= //
 
-// Nominmal SRAM word with for ASIC implementation. In general, SRAM
+// Nominal SRAM word with for ASIC implementation. In general, SRAM
 // compilers do not allow small word widths (i.e. a single pixel), so
-// we define a larger word with an then inject additional logic to pack
+// we define a larger word with and then inject additional logic to pack
 // and unpack pixel data.
 localparam int SRAM_W = 128;
 typedef logic [SRAM_W-1:0] sram_word_t;
@@ -166,6 +167,9 @@ assign word_next_en = push_i;
 assign word_next_w = sol_i ? 'b10 : word_is_last ? 'b01 : (word_next_r << 1);
 assign word_next = sol_i ? 'b1 : word_next_r;
 
+// Must point to only a single position.
+`P_ASSERT_CR(clk, arst_n, $onehot0(word_next));
+
 // Logic to compose an SRAM word for some arbitrary word width and
 // line buffer pixel width.
 //
@@ -185,7 +189,7 @@ if (i < (PIXELS_PER_WORD_N - 1)) begin : reg_GEN
   assign word_w[i] = dat_i;
 
   assign word_vld_w[i] = 
-     word_vld_r [i] ? (~word_is_last) : word_next[i] & push_i;
+    word_vld_r [i] ? (~word_is_last) : word_next[i] & push_i;
 
 end: reg_GEN
 
@@ -206,6 +210,7 @@ else begin: last_GEN
 end: last_GEN
 
 end: din_pack_GEN
+
 
 // Advance push whenever (1) the datapath is not
 // stalled, and (2) either end-of-line is reached or the current word
@@ -334,3 +339,7 @@ endmodule : conv_cntrl_lb_asic
 `define FLOPS_UNDEF
 `include "flops.svh"
 `undef FLOPS_UNDEF
+
+`define ASSERTS_UNDEF
+`include "asserts.svh"
+`undef ASSERTS_UNDEF

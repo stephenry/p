@@ -25,6 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`include "asserts.svh"
 `include "common_defs.svh"
 
 module dffre #(
@@ -46,6 +47,8 @@ module dffre #(
 , input                               clk
 );
 
+`P_ASSERT_CR(clk, arst_n, !$isunknown(en));
+
 always_ff @(posedge clk or negedge arst_n)
   if (~arst_n)
     q <= INIT;
@@ -53,3 +56,7 @@ always_ff @(posedge clk or negedge arst_n)
     q <= d;
 
 endmodule : dffre
+
+`define ASSERTS_UNDEF
+`include "asserts.svh"
+`undef ASSERTS_UNDEF

@@ -1,5 +1,5 @@
 //========================================================================== //
-// Copyright (c) 2022, Stephen Henry
+// Copyright (c) 2025, Stephen Henry
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,32 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`include "common_defs.svh"
+`ifndef TB_RTL_ASSERTS_SVH
+`define TB_RTL_ASSERTS_SVH
 
-`include "asserts.svh"
+`ifdef ASSERTS_UNDEF
 
-module dffe #(parameter int W = 1) (
-// -------------------------------------------------------------------------- //
-// Register Interface
-  input [W - 1:0]                     d
-, input                               en
-//
-, output logic [W - 1:0]              q
+`undef P_ASSERT_C
+`undef P_ASSERT_CR
 
-// -------------------------------------------------------------------------- //
-// Clk
-, input                               clk
-);
+`else
 
-// Good pratice to ensure enable is not X.
-`P_ASSERT_C(clk, !$isunknown(en));
+`define P_ASSERT_C(__clk, __cond) \
+    property AssertProperty```__LINE__``; \
+      @(posedge __clk) \
+      __cond; \
+    endproperty : AssertProperty```__LINE__`` \
+    assert property (AssertProperty```__LINE__``) \
+      else $error($sformatf("ASSERTION FAILED at %s:%d", `__FILE__, `__LINE__))
 
-always_ff @(posedge clk)
-  if (en)
-    q <= d;
+`define P_ASSERT_CR(__clk, __rst, __cond) \
+    property AssertProperty```__LINE__``; \
+      @(posedge __clk) disable iff (!__rst) \
+      __cond; \
+    endproperty : AssertProperty```__LINE__`` \
+    assert property (AssertProperty```__LINE__``) \
+      else $error($sformatf("ASSERTION FAILED at %s:%d", `__FILE__, `__LINE__))
 
-endmodule : dffe
+`endif
 
-`define ASSERTS_UNDEF
-`include "asserts.svh"
-`undef ASSERTS_UNDEF
+`endif /* TB_RTL_ASSERTS_SVH */

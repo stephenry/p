@@ -5,10 +5,21 @@ A personal collection of small but complex hardware design challenges in SystemV
 Simulation via Verilator; verification in modern C++20 (pseudo-UVM style). No synthesis targets – pure design exploration.
 
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![Language](https://img.shields.io/badge/Language-SystemVerilog-orange.svg)]()
+[![Sim](https://img.shields.io/badge/Sim-Verilator-green.svg)]()
 
 ## Synopsis
 
 Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. There's no overarching theme, they're simply small problems specifically designed to challenge my design skills. Simulation is performed using Verilator and the verification environment is written as pseudo-UVM C++20. I have made no attempt to synthesize these designs to any particularly target or technology as I lack the tools to hand. The longterm goal of the repo is to grow the number of projects over time and hopefully achieve "Fortune and Glory" whilst doing so.
+
+## Table of Contents
+- [Synopsis](#synopsis)
+- [Projects](#projects)
+  - [Conv](#conv)
+  - [Seqgen](#seqgen)
+- [Notable Aspects](#notable-aspects)
+- [Usage](#usage)
+- [License](#license)
 
 # Projects
 
@@ -41,7 +52,12 @@ Verilator does not have the ability to simulate UVM therefore a pseudo-UVM like 
 
 ## Usage
 
-The environment has been specifically designed to operate within the provided [container](./.devcontainer/Dockerfile). All necessary tools (at fixed versions) are provided and configuration scripts are designed to search known locations in the filesystem for appropriate tools. The work/project is not designed for general consumption so no detailed instructions are provided.
+The environment has been specifically designed to operate within the provided [container](./.devcontainer/Dockerfile). All necessary tools (at fixed versions) are provided and configuration scripts are designed to search known locations in the filesystem for appropriate tools. The work is not designed for general consumption so no detailed instructions are provided. But, if you're feeling adventurous: 
+
+### Quick Start (in VS Code)
+1. Open in VS Code with Dev Containers extension.
+2. Reopen in container (it builds automatically).
+3. Build and run tests: `cmake --build build && ./build/test/driver --project=conv`
 
 ## License
 

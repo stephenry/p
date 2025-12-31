@@ -1,10 +1,14 @@
 # Project - "P"
 
-Project "P" aka "99 Projects but a job ain't one" aka "99 Projects but a boss ain't one" aka "Steve, you've really got too much time on your hands!"
+A personal collection of small but complex hardware design challenges in SystemVerilog – completable in a few days, yet deep enough to sharpen advanced RTL skills.
+
+Simulation via Verilator; verification in modern C++20 (pseudo-UVM style). No synthesis targets – pure design exploration.
+
+[![License](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 ## Synopsis
 
-Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. There's no overarching theme, they're simply small problems specifically designed to challenge my design skills. Simulation is performed using Verilator and the verification environment is written as pseudo-UVM C++20. I have made no attempt to synthesize these designs to any particularly target or technology as I lack the tools to hand. The longterm goal of the repo. is to grow the number of projects over time and hopefully achieve "Fortune and Glory" whilst doing so.
+Contained herein is a collection of small (but complex) hardware design challenges. Small enough to be completed in a few days, but complex enough to be challenging. There's no overarching theme, they're simply small problems specifically designed to challenge my design skills. Simulation is performed using Verilator and the verification environment is written as pseudo-UVM C++20. I have made no attempt to synthesize these designs to any particularly target or technology as I lack the tools to hand. The longterm goal of the repo is to grow the number of projects over time and hopefully achieve "Fortune and Glory" whilst doing so.
 
 # Projects
 
@@ -14,12 +18,12 @@ The [Conv](./projects/conv) project presents a SystemVerilog implementation of a
 
 - Frame dimensions are not hardcoded into logic and are instead derived from an AXI-Stream style interface. The definition of the interface made calculation of the relative position within the frame, required to compute appropriate masking, non-trivial to calculate.
 - Support for backpressure across the datapath. A tricky addition which required consideration when tracking position in the frame (no pipeline bubbles are allowed).
-- FPGA and ASIC targeted Line Buffer implementations. FPGA targets allow flexible, narrow (8b) BRAM that may hold state at dout over multiple cycles, whereas typical ASIC SRAM macro require additional alignment, skid buffer logic, and lose their state at dout after the read cycle. In the context of an ASIC, Line Buffers would typically be realized using flops, but an SRAM implemenation (although overkill) is more complex to implement, which is the objective of this exercise.
+- FPGA and ASIC targeted Line Buffer implementations. FPGA targets allow flexible, narrow (8b) BRAM that may hold state at dout over multiple cycles, whereas typical ASIC SRAM macro require additional alignment, skid buffer logic, and lose their state at dout after the read cycle. In the context of an ASIC, Line Buffers would typically be realized using flops, but an SRAM implementation (although overkill) is more complex to implement, which is the objective of this exercise.
 - RTL is standardized on an ASIC-style asynchronous, active-low reset strategy. FPGA implementations typically prefer synchronous resets. The RTL is trivial to modify as necessary, but I have not done so.
 
 ## Seqgen
 
-The [Seqgen](./projects/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution uses a [ucode-style](./projects/seqgen/rtl/seqgen_cntrl_case.sv) control unit for optimal PPA. Additionally, a [PLA-based](./projects/seqgen/rtl/seqgen_cntrl_pla.sv) solution uses the ABC Synthesis tool is used to render a Espresso-style PLA table to Verilog expressions. This code is injected using a preprocessing stage before Verilation. A [standard FSM](./projects/seqgen/rtl/seqgen_cntrl_fsm.sv) implementation is presented, too. Such extreme lengths (PLA-style) are unnecessary for such a small, design. Nevertheless, it's quite an interesting, non-trivial approach, and... I've got too much time on my hands.
+The [Seqgen](./projects/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution uses a [microcode-style](./projects/seqgen/rtl/seqgen_cntrl_case.sv) control unit for optimal PPA. Additionally, a [PLA-based](./projects/seqgen/rtl/seqgen_cntrl_pla.sv) solution uses the ABC Synthesis tool, which is used to render a Espresso-style PLA table to Verilog expressions. This code is injected using a preprocessing stage before Verilation. A [standard FSM](./projects/seqgen/rtl/seqgen_cntrl_fsm.sv) implementation is presented, too. Such extreme lengths (PLA-style) are unnecessary for such a small design. Nevertheless, it's quite an interesting, non-trivial approach, and... I've got too much time on my hands.
 
 ## Notable Aspects
 
@@ -37,7 +41,7 @@ Verilator does not have the ability to simulate UVM therefore a pseudo-UVM like 
 
 ## Usage
 
-The environment has been specifically designed to operate within the provided [container](./.devcontainer/Dockerfile). All necessary tools (at fixed versions) are provided and configuration scripts are designs to search known locations in the filesystem for appropriate tools. The work/project is not designed for general consumption so no detailed instructions are provided.
+The environment has been specifically designed to operate within the provided [container](./.devcontainer/Dockerfile). All necessary tools (at fixed versions) are provided and configuration scripts are designed to search known locations in the filesystem for appropriate tools. The work/project is not designed for general consumption so no detailed instructions are provided.
 
 ## License
 

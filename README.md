@@ -36,6 +36,10 @@ The [Conv](./projects/conv) project presents a SystemVerilog implementation of a
 
 The [Seqgen](./projects/seqgen) project implements a well-known control-oriented interview question. The problem is to generate a known sequence across a 2D array for variable-sizes of array. The chosen solution uses a [microcode-style](./projects/seqgen/rtl/seqgen_cntrl_case.sv) control unit for optimal PPA. Additionally, a [PLA-based](./projects/seqgen/rtl/seqgen_cntrl_pla.sv) solution uses the ABC Synthesis tool, which is used to render a Espresso-style PLA table to Verilog expressions. This code is injected using a preprocessing stage before Verilation. A [standard FSM](./projects/seqgen/rtl/seqgen_cntrl_fsm.sv) implementation is presented, too. Such extreme lengths (PLA-style) are unnecessary for such a small design. Nevertheless, it's quite an interesting, non-trivial approach.
 
+Notable aspects of the project include:
+
+- Embedded [PLA Table](./projects/seqgen/rtl/seqgen_cntrl_pla.sv) which is automatically synthesized and embedded in the rendered Verilog before Verilation.
+
 ## Notable Aspects
 
 ### Scripted Verilation
